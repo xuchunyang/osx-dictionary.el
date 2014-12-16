@@ -7,19 +7,21 @@
 
 1. Compile & install `dictionary`
 
-```sh
-clang -O3 -framework CoreServices -framework Foundation dictionary.m -o dictionary
-sudo mv dictionary /usr/local/bin
-```
+   `dictionary` is a simple CommandLine utility to access *Dictionary.app*
+
+   ```sh
+   clang -O3 -framework CoreServices -framework Foundation dictionary.m -o dictionary
+   sudo mv dictionary /usr/local/bin
+   ```
 
 2. Put `dictionary.el` to your `load-path` and add the following to
    your Emacs initialization file
 
-```emacs-lisp
-(require 'dictionary)
-;; Example key binding
-(global-set-key (kbd "C-c d") 'dictionary-search-pointer)
-```
+   ```emacs-lisp
+   (require 'dictionary)
+   ;; Example key binding
+   (global-set-key (kbd "C-c d") 'dictionary-search-pointer)
+   ```
 
 ## Usage
 
