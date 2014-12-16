@@ -25,7 +25,7 @@
 ;; Translation word by Dictionary.app, and display translation use
 ;; buffer.
 ;;
-;; Before are commands you can use:
+;; Below are commands you can use:
 ;; `dictionary-search-word'
 ;; Search word from input via mini buffer
 ;; `dictionary-search-pointer'

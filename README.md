@@ -24,7 +24,7 @@ sudo mv dictionary /usr/local/bin
 ## Usage
 
 ```emacs-lisp
-;; Before are commands you can use:
+;; Below are commands you can use:
 ;; `dictionary-search-word'
 ;; Search word from input via mini buffer
 ;; `dictionary-search-pointer'
