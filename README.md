@@ -28,7 +28,7 @@
 ```emacs-lisp
 ;; Below are commands you can use:
 ;; `dictionary-search-word'
-;; Search word from input via mini buffer
+;; Search word from input via minibuffer
 ;; `dictionary-search-pointer'
 ;; Search word under pointer (cursor)
 ```
