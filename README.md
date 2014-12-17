@@ -29,3 +29,6 @@ Below are commands you can use:
 
 * `dictionary-search-word` Search word from input via minibuffer
 * `dictionary-search-pointer`Search word under pointer
+
+Screenshot of a sample usage:
+![search word 'utility'](http://i.imgur.com/INNgf2V.png)
