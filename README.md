@@ -21,14 +21,11 @@
    (require 'dictionary)
    ;; Example key binding
    (global-set-key (kbd "C-c d") 'dictionary-search-pointer)
+   (global-set-key (kbd "C-c c") 'dictionary-search-word)
    ```
 
 ## Usage
+Below are commands you can use:
 
-```emacs-lisp
-;; Below are commands you can use:
-;; `dictionary-search-word'
-;; Search word from input via minibuffer
-;; `dictionary-search-pointer'
-;; Search word under pointer (cursor)
-```
+* `dictionary-search-word` Search word from input via minibuffer
+* `dictionary-search-pointer`Search word under pointer
