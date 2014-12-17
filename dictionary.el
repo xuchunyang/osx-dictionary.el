@@ -84,7 +84,10 @@
 (defvar dictionary-previous-window-configuration nil
   "Window configuration before switching to dictionary buffer.")
 
-(define-derived-mode dictionary-mode fundamental-mode
+(define-derived-mode dictionary-mode fundamental-mode "dictionary"
+  "Major mode to look up word through dictionary.
+\\{dictionary-mode-map}.
+Turning on Text mode runs the normal hook `dictionary-mode-hook'."
   (setq font-lock-defaults '(dictionary-mode-font-lock-Keywords))
   (setq buffer-read-only t)
   (message "dictionary-mode: init"))
@@ -145,8 +148,6 @@ And display complete translations in other buffer."
       (dictionary-goto-dictionary)
       (goto-char (point-min))
       (setq buffer-read-only t))))
-
-
 
 (defun dictionary-prompt-input ()
   "Prompt input object for translate."
