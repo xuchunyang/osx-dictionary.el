@@ -175,5 +175,11 @@ Otherwise return word around point."
                                       (region-end))
     (thing-at-point 'word)))
 
+;;;###autoload
+(defun dictionary-bug-report ()
+  "File a bug report about the `dictionary' package."
+  (interactive)
+  (browse-url "https://github.com/xuchunyang/dictionary.el/issues"))
+
 (provide 'dictionary)
 ;;; dictionary.el ends here
