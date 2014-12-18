@@ -49,6 +49,15 @@
 
 ;;; Code:
 
+(defvar dictionary-mode-header-line
+  '(
+    (:propertize "i" face mode-line-buffer-id)
+    ": Search Word"
+    "    "
+    (:propertize "q" face mode-line-buffer-id)
+    ": Quit")
+  "Header-line used on the `dictionary-mode'.")
+
 (defvar dictionary-mode-font-lock-Keywords
   '(
     ;; TODO: 1. add more keywords like "名" and "代". 2. adopt more precise regex
@@ -88,6 +97,8 @@
   "Major mode to look up word through dictionary.
 \\{dictionary-mode-map}.
 Turning on Text mode runs the normal hook `dictionary-mode-hook'."
+
+  (setq header-line-format dictionary-mode-header-line)
   (setq font-lock-defaults '(dictionary-mode-font-lock-Keywords))
   (setq buffer-read-only t)
   (message "dictionary-mode: init"))
