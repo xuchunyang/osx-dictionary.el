@@ -56,6 +56,9 @@
     (:propertize "i" face mode-line-buffer-id)
     ": Search Word"
     "    "
+    (:propertize "o" face mode-line-buffer-id)
+    ": Open current word in Dictionary.app"
+    "    "
     (:propertize "q" face mode-line-buffer-id)
     ": Quit")
   "Header-line used on the `dictionary-mode'.")
@@ -76,6 +79,7 @@
     ;; Dictionary command
     (define-key map "q" 'dictionary-quit)
     (define-key map "i" 'dictionary-search-word)
+    (define-key map "o" 'dictionary-open-dictionary-app)
     ;; Isearch
     (define-key map "S" 'isearch-forward-regexp)
     (define-key map "R" 'isearch-backward-regexp)
@@ -104,6 +108,14 @@ Turning on Text mode runs the normal hook `dictionary-mode-hook'."
   (setq font-lock-defaults '(dictionary-mode-font-lock-Keywords))
   (setq buffer-read-only t)
   (message "dictionary-mode: init"))
+
+(defun dictionary-open-dictionary-app ()
+  "Open current searched `word' in Dictionary.app."
+  (interactive)
+  (let ((current-point (point)))
+    (goto-char (point-min))               ;TODO: recover point
+    (shell-command (format "open dict://%s" (thing-at-point 'word) ))
+    (goto-char current-point)))
 
 (defun dictionary-quit ()
   "Quit dictionary: reselect previously selected buffer."
