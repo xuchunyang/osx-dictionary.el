@@ -1,4 +1,5 @@
-# Dictionary.app interface for Emacs
+# OSX *Dictionary.app* interface for Emacs
+---
 
 ## Introduction
 `dictionary.el` is Emacs port of [dictionary.vim](https://github.com/itchyny/dictionary.vim). `dictionary.el` provides functions which invoke Mac OS X's *Dictionary.app*.
