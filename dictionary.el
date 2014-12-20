@@ -112,10 +112,9 @@ Turning on Text mode runs the normal hook `dictionary-mode-hook'."
 (defun dictionary-open-dictionary-app ()
   "Open current searched `word' in Dictionary.app."
   (interactive)
-  (let ((current-point (point)))
-    (goto-char (point-min))               ;TODO: recover point
-    (shell-command (format "open dict://%s" (thing-at-point 'word) ))
-    (goto-char current-point)))
+  (save-excursion
+      (goto-char (point-min))
+      (shell-command (format "open dict://%s" (thing-at-point 'word) ))))
 
 (defun dictionary-quit ()
   "Quit dictionary: reselect previously selected buffer."
