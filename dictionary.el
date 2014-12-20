@@ -65,7 +65,6 @@
 
 (defvar dictionary-mode-font-lock-Keywords
   '(
-    ;; TODO: 1. add more keywords like "名" and "代". 2. adopt more precise regex
     ;; Word class
     ("noun\\|adjective\\|det\\|verb\\|adverb\\|abbreviation\\|preposition\\|suffix\\|prefix\\|conjunction\\|symb" . font-lock-type-face)
     ;; Serial number

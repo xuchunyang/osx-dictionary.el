@@ -35,3 +35,6 @@ Here is a screenshot of a sample usage:
 
 ## Todo
 - [ ] Save history
+- [ ] Improve regex
+  - [ ] Add more keywords, for example, "名" and "代"
+  - [ ] Adopt more precise matching
