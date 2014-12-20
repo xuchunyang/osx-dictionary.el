@@ -32,3 +32,6 @@ Below are commands you can use:
 
 Here is a screenshot of a sample usage:
 ![Imgur](http://i.imgur.com/MoYPNLJ.png)
+
+## Todo
+- [ ] Save history
