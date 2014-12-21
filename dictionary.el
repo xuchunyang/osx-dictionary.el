@@ -146,6 +146,7 @@ Turning on Text mode runs the normal hook `dictionary-mode-hook'."
   "Search some WORD."
   (shell-command-to-string (format "dictionary %s" word)))
 
+;;;###autoload
 (defun dictionary-search-word ()
   "Prompt for input WORD.
 And show translation in other buffer."
@@ -159,6 +160,7 @@ And show translation in other buffer."
       (goto-char (point-min))
       (setq buffer-read-only t))))
 
+;;;###autoload
 (defun dictionary-search-pointer ()
   "Get current word.
 And display complete translations in other buffer."
