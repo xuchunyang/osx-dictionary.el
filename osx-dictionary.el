@@ -1,9 +1,9 @@
-;;; dictionary.el --- Interface for Dictionary.app
+;;; osx-dictionary.el --- Interface for Dictionary.app
 
 ;; Copyright (C) 2014 by Chunyang Xu
 
 ;; Author: Chunyang Xu <xuchunyang56@gmail.com>
-;; URL: https://github.com/xuchunyang/dictionary.el
+;; URL: https://github.com/xuchunyang/osx-dictionary.el
 ;; Version: 0.1
 ;; keywords: help, dictionary, tools
 
@@ -28,30 +28,30 @@
 ;; buffer.
 ;;
 ;; Below are commands you can use:
-;; `dictionary-search-word'
+;; `osx-dictionary-search-word'
 ;; Search word from input via minibuffer
-;; `dictionary-search-pointer'
+;; `osx-dictionary-search-pointer'
 ;; Search word under pointer (cursor)
 ;;
 ;; Tips:
 ;;
-;; If current mark is active, dictionary commands will translate
+;; If current mark is active, osx-dictionary commands will translate
 ;; region string, otherwise translate word around point.
 ;;
 
 ;;; Installation:
 ;;
-;; Put dictionary.el to your `load-path'.
+;; Put osx-dictionary.el to your `load-path'.
 ;; And the following to your Emacs initialization file
 ;;
-;; (require 'dictionary)
+;; (require 'osx-dictionary)
 ;; Example key binding
-;; (global-set-key (kbd "C-c d") 'dictionary-search-pointer)
+;; (global-set-key (kbd "C-c d") 'osx-dictionary-search-pointer)
 
 
 ;;; Code:
 
-(defvar dictionary-mode-header-line
+(defvar osx-dictionary-mode-header-line
   '(
     (:propertize "i" face mode-line-buffer-id)
     ": Search Word"
@@ -61,9 +61,9 @@
     "    "
     (:propertize "q" face mode-line-buffer-id)
     ": Quit")
-  "Header-line used on the `dictionary-mode'.")
+  "Header-line used on the `osx-dictionary-mode'.")
 
-(defvar dictionary-mode-font-lock-Keywords
+(defvar osx-dictionary-mode-font-lock-Keywords
   '(
     ;; Word class
     ("noun\\|adjective\\|det\\|verb\\|adverb\\|abbreviation\\|preposition\\|suffix\\|prefix\\|conjunction\\|symb" . font-lock-type-face)
@@ -71,14 +71,14 @@
     ("^[0-9]+" . font-lock-builtin-face)
     ;; Dictionary comment
     ("DERIVATIVES\\|ORIGIN\\|PHRASES" . font-lock-comment-face))
-  "Keywords to highlight in `dictionary-mode'.")
+  "Keywords to highlight in `osx-dictionary-mode'.")
 
-(defvar dictionary-mode-map
+(defvar osx-dictionary-mode-map
   (let ((map (make-sparse-keymap)))
     ;; Dictionary command
-    (define-key map "q" 'dictionary-quit)
-    (define-key map "i" 'dictionary-search-word)
-    (define-key map "o" 'dictionary-open-dictionary-app)
+    (define-key map "q" 'osx-dictionary-quit)
+    (define-key map "i" 'osx-dictionary-search-word)
+    (define-key map "o" 'osx-dictionary-open-dictionary-app)
     ;; Isearch
     (define-key map "S" 'isearch-forward-regexp)
     (define-key map "R" 'isearch-backward-regexp)
@@ -91,96 +91,96 @@
     (define-key map "h" 'backward-char)
     (define-key map "?" 'describe-mode)
     map)
-  "Keymap for `dictionary-mode'.")
+  "Keymap for `osx-dictionary-mode'.")
 
-(defconst dictionary-buffer-name "*Dictionary*")
+(defconst osx-dictionary-buffer-name "*Dictionary*")
 
-(defvar dictionary-previous-window-configuration nil
+(defvar osx-dictionary-previous-window-configuration nil
   "Window configuration before switching to dictionary buffer.")
 
-(define-derived-mode dictionary-mode fundamental-mode "dictionary"
+(define-derived-mode osx-dictionary-mode fundamental-mode "osx-dictionary"
   "Major mode to look up word through dictionary.
 \\{dictionary-mode-map}.
-Turning on Text mode runs the normal hook `dictionary-mode-hook'."
+Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
 
-  (setq header-line-format dictionary-mode-header-line)
-  (setq font-lock-defaults '(dictionary-mode-font-lock-Keywords))
+  (setq header-line-format osx-dictionary-mode-header-line)
+  (setq font-lock-defaults '(osx-dictionary-mode-font-lock-Keywords))
   (setq buffer-read-only t)
-  (message "dictionary-mode: init"))
+  (message "osx-dictionary-mode: init"))
 
-(defun dictionary-open-dictionary-app ()
+(defun osx-dictionary-open-dictionary-app ()
   "Open current searched `word' in Dictionary.app."
   (interactive)
   (save-excursion
       (goto-char (point-min))
       (shell-command (format "open dict://%s" (thing-at-point 'word) ))))
 
-(defun dictionary-quit ()
-  "Quit dictionary: reselect previously selected buffer."
+(defun osx-dictionary-quit ()
+  "Quit osx-dictionary: reselect previously selected buffer."
   (interactive)
-  (if (window-configuration-p dictionary-previous-window-configuration)
+  (if (window-configuration-p osx-dictionary-previous-window-configuration)
       (progn
-        (set-window-configuration dictionary-previous-window-configuration)
-        (setq dictionary-previous-window-configuration nil)
-        (bury-buffer (dictionary-get-buffer)))
+        (set-window-configuration osx-dictionary-previous-window-configuration)
+        (setq osx-dictionary-previous-window-configuration nil)
+        (bury-buffer (osx-dictionary-get-buffer)))
     (bury-buffer)))
 
-(defun dictionary-get-buffer ()
-  "Get the dictionary buffer.  Create one if there's none."
-  (let ((buffer (get-buffer-create dictionary-buffer-name)))
+(defun osx-dictionary-get-buffer ()
+  "Get the osx-dictionary buffer.  Create one if there's none."
+  (let ((buffer (get-buffer-create osx-dictionary-buffer-name)))
     (with-current-buffer buffer
-      (unless (eq major-mode 'dictionary-mode)
-        (dictionary-mode)))
+      (unless (eq major-mode 'osx-dictionary-mode)
+        (osx-dictionary-mode)))
     buffer))
 
-(defun dictionary-goto-dictionary ()
-  "Switch to dictionary buffer in other window."
-  (setq dictionary-previous-window-configuration (current-window-configuration))
-  (let* ((buffer (dictionary-get-buffer))
+(defun osx-dictionary-goto-dictionary ()
+  "Switch to osx-dictionary buffer in other window."
+  (setq osx-dictionary-previous-window-configuration (current-window-configuration))
+  (let* ((buffer (osx-dictionary-get-buffer))
          (window (get-buffer-window buffer)))
     (if (null window)
         (switch-to-buffer-other-window buffer)
       (select-window window))))
 
-(defun dictionary-search (word)
+(defun osx-dictionary-search (word)
   "Search some WORD."
-  (shell-command-to-string (format "dictionary %s" word)))
+  (shell-command-to-string (format "osx-dictionary %s" word)))
 
 ;;;###autoload
-(defun dictionary-search-word ()
+(defun osx-dictionary-search-word ()
   "Prompt for input WORD.
 And show translation in other buffer."
   (interactive)
-  (let ((word (dictionary-prompt-input)))
-    (with-current-buffer (get-buffer-create dictionary-buffer-name)
+  (let ((word (osx-dictionary-prompt-input)))
+    (with-current-buffer (get-buffer-create osx-dictionary-buffer-name)
       (setq buffer-read-only nil)
       (erase-buffer)
-      (insert (dictionary-search word))
-      (dictionary-goto-dictionary)
+      (insert (osx-dictionary-search word))
+      (osx-dictionary-goto-dictionary)
       (goto-char (point-min))
       (setq buffer-read-only t))))
 
 ;;;###autoload
-(defun dictionary-search-pointer ()
+(defun osx-dictionary-search-pointer ()
   "Get current word.
 And display complete translations in other buffer."
   (interactive)
-  (let ((word (dictionary-region-or-word)))
-    (with-current-buffer (get-buffer-create dictionary-buffer-name)
+  (let ((word (osx-dictionary-region-or-word)))
+    (with-current-buffer (get-buffer-create osx-dictionary-buffer-name)
       (setq buffer-read-only nil)
       (erase-buffer)
-      (insert (dictionary-search word))
-      (dictionary-goto-dictionary)
+      (insert (osx-dictionary-search word))
+      (osx-dictionary-goto-dictionary)
       (goto-char (point-min))
       (setq buffer-read-only t))))
 
-(defun dictionary-prompt-input ()
+(defun osx-dictionary-prompt-input ()
   "Prompt input object for translate."
-  (read-string (format "Word (%s): " (or (dictionary-region-or-word) ""))
+  (read-string (format "Word (%s): " (or (osx-dictionary-region-or-word) ""))
                nil nil
-               (dictionary-region-or-word)))
+               (osx-dictionary-region-or-word)))
 
-(defun dictionary-region-or-word ()
+(defun osx-dictionary-region-or-word ()
   "Return region or word around point.
 If `mark-active' on, return region string.
 Otherwise return word around point."
@@ -190,10 +190,10 @@ Otherwise return word around point."
     (thing-at-point 'word)))
 
 ;;;###autoload
-(defun dictionary-bug-report ()
-  "File a bug report about the `dictionary' package."
+(defun osx-dictionary-bug-report ()
+  "File a bug report about the `osx-dictionary' package."
   (interactive)
-  (browse-url "https://github.com/xuchunyang/dictionary.el/issues"))
+  (browse-url "https://github.com/xuchunyang/osx-dictionary.el/issues"))
 
-(provide 'dictionary)
-;;; dictionary.el ends here
+(provide 'osx-dictionary)
+;;; osx-dictionary.el ends here
