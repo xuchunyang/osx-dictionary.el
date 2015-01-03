@@ -93,7 +93,7 @@
     map)
   "Keymap for `osx-dictionary-mode'.")
 
-(defconst osx-dictionary-buffer-name "*Dictionary*")
+(defconst osx-dictionary-buffer-name "*osx-dictionary*")
 
 (defvar osx-dictionary-previous-window-configuration nil
   "Window configuration before switching to dictionary buffer.")
