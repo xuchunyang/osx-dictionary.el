@@ -57,7 +57,10 @@
     ": Search Word"
     "    "
     (:propertize "o" face mode-line-buffer-id)
-    ": Open current word in Dictionary.app"
+    ": Open in Dictionary.app"
+    "    "
+    (:propertize "y|c" face mode-line-buffer-id)
+    ": Open in Youdao or Cambridge site"
     "    "
     (:propertize "q" face mode-line-buffer-id)
     ": Quit")
@@ -79,6 +82,8 @@
     (define-key map "q" 'osx-dictionary-quit)
     (define-key map "i" 'osx-dictionary-search-word)
     (define-key map "o" 'osx-dictionary-open-dictionary-app)
+    (define-key map "y" 'osx-dictionary-open-youdao)
+    (define-key map "c" 'osx-dictionary-open-cambridge)
     ;; Isearch
     (define-key map "S" 'isearch-forward-regexp)
     (define-key map "R" 'isearch-backward-regexp)
@@ -112,8 +117,25 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
   "Open current searched `word' in Dictionary.app."
   (interactive)
   (save-excursion
-      (goto-char (point-min))
-      (shell-command (format "open dict://%s" (thing-at-point 'word) ))))
+    (goto-char (point-min))
+    (shell-command (format "open dict://%s" (thing-at-point 'word) ))))
+
+(defun osx-dictionary-open-youdao ()
+  "Open current searched `word' in http://dict.youdao.com."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (shell-command (format "open http://dict.youdao.com/search\\?q=%s"
+                           (thing-at-point 'word)))))
+
+(defun osx-dictionary-open-cambridge ()
+  "Open current searched `word' in http://dictionary.cambridge.org/dictionary/american-english/."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (shell-command
+     (format "open http://dictionary.cambridge.org/dictionary/american-english/%s"
+             (thing-at-point 'word)))))
 
 (defun osx-dictionary-quit ()
   "Quit osx-dictionary: reselect previously selected buffer."
