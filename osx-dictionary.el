@@ -165,7 +165,7 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
       (select-window window))))
 
 (defun osx-dictionary-search (word)
-  "Search some WORD."
+  "Search WORD."
   (shell-command-to-string (format "osx-dictionary %s" word)))
 
 ;;;###autoload
