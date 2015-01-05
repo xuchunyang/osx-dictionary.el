@@ -143,10 +143,10 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
       (progn
         (set-window-configuration osx-dictionary-previous-window-configuration)
         (setq osx-dictionary-previous-window-configuration nil)
-        (bury-buffer (osx-dictionary-get-buffer)))
+        (bury-buffer (osx-dictionary--get-buffer)))
     (bury-buffer)))
 
-(defun osx-dictionary-get-buffer ()
+(defun osx-dictionary--get-buffer ()
   "Get the osx-dictionary buffer.  Create one if there's none."
   (let ((buffer (get-buffer-create osx-dictionary-buffer-name)))
     (with-current-buffer buffer
@@ -154,16 +154,16 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
         (osx-dictionary-mode)))
     buffer))
 
-(defun osx-dictionary-goto-dictionary ()
+(defun osx-dictionary--goto-dictionary ()
   "Switch to osx-dictionary buffer in other window."
   (setq osx-dictionary-previous-window-configuration (current-window-configuration))
-  (let* ((buffer (osx-dictionary-get-buffer))
+  (let* ((buffer (osx-dictionary--get-buffer))
          (window (get-buffer-window buffer)))
     (if (null window)
         (switch-to-buffer-other-window buffer)
       (select-window window))))
 
-(defun osx-dictionary-search (word)
+(defun osx-dictionary--search (word)
   "Search WORD."
   (shell-command-to-string (format "osx-dictionary %s" word)))
 
@@ -172,16 +172,16 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
   "Prompt for input WORD.
 And show translation in other buffer."
   (interactive)
-  (let ((word (osx-dictionary-prompt-input)))
+  (let ((word (osx-dictionary--prompt-input)))
     (with-current-buffer (get-buffer-create osx-dictionary-buffer-name)
       (setq buffer-read-only nil)
       (erase-buffer)
       (let ((progress-reporter
              (make-progress-reporter (format "Searching (%s)..." word)
                                      nil nil)))
-        (insert (osx-dictionary-search word))
+        (insert (osx-dictionary--search word))
         (progress-reporter-done progress-reporter))
-      (osx-dictionary-goto-dictionary)
+      (osx-dictionary--goto-dictionary)
       (goto-char (point-min))
       (setq buffer-read-only t))))
 
@@ -190,26 +190,26 @@ And show translation in other buffer."
   "Get current word.
 And display complete translations in other buffer."
   (interactive)
-  (let ((word (osx-dictionary-region-or-word)))
+  (let ((word (osx-dictionary--region-or-word)))
     (with-current-buffer (get-buffer-create osx-dictionary-buffer-name)
       (setq buffer-read-only nil)
       (erase-buffer)
       (let ((progress-reporter
              (make-progress-reporter (format "Searching (%s)..." word)
                                      nil nil)))
-        (insert (osx-dictionary-search word))
+        (insert (osx-dictionary--search word))
         (progress-reporter-done progress-reporter))
-      (osx-dictionary-goto-dictionary)
+      (osx-dictionary--goto-dictionary)
       (goto-char (point-min))
       (setq buffer-read-only t))))
 
-(defun osx-dictionary-prompt-input ()
+(defun osx-dictionary--prompt-input ()
   "Prompt input object for translate."
-  (read-string (format "Word (%s): " (or (osx-dictionary-region-or-word) ""))
+  (read-string (format "Word (%s): " (or (osx-dictionary--region-or-word) ""))
                nil nil
-               (osx-dictionary-region-or-word)))
+               (osx-dictionary--region-or-word)))
 
-(defun osx-dictionary-region-or-word ()
+(defun osx-dictionary--region-or-word ()
   "Return region or word around point.
 If `mark-active' on, return region string.
 Otherwise return word around point."
