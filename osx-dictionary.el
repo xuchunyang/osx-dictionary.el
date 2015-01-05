@@ -110,8 +110,7 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
 
   (setq header-line-format osx-dictionary-mode-header-line)
   (setq font-lock-defaults '(osx-dictionary-mode-font-lock-Keywords))
-  (setq buffer-read-only t)
-  (message "osx-dictionary-mode: init"))
+  (setq buffer-read-only t))
 
 (defun osx-dictionary-open-dictionary-app ()
   "Open current searched `word' in Dictionary.app."
@@ -177,7 +176,11 @@ And show translation in other buffer."
     (with-current-buffer (get-buffer-create osx-dictionary-buffer-name)
       (setq buffer-read-only nil)
       (erase-buffer)
-      (insert (osx-dictionary-search word))
+      (let ((progress-reporter
+             (make-progress-reporter (format "Searching (%s)..." word)
+                                     nil nil)))
+        (insert (osx-dictionary-search word))
+        (progress-reporter-done progress-reporter))
       (osx-dictionary-goto-dictionary)
       (goto-char (point-min))
       (setq buffer-read-only t))))
@@ -191,7 +194,11 @@ And display complete translations in other buffer."
     (with-current-buffer (get-buffer-create osx-dictionary-buffer-name)
       (setq buffer-read-only nil)
       (erase-buffer)
-      (insert (osx-dictionary-search word))
+      (let ((progress-reporter
+             (make-progress-reporter (format "Searching (%s)..." word)
+                                     nil nil)))
+        (insert (osx-dictionary-search word))
+        (progress-reporter-done progress-reporter))
       (osx-dictionary-goto-dictionary)
       (goto-char (point-min))
       (setq buffer-read-only t))))
