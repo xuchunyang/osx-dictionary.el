@@ -1,6 +1,6 @@
 ;;; osx-dictionary.el --- Interface for Dictionary.app
 
-;; Copyright (C) 2014 by Chunyang Xu
+;; Copyright (C) 2014-2015 by Chunyang Xu
 
 ;; Author: Chunyang Xu <xuchunyang56@gmail.com>
 ;; URL: https://github.com/xuchunyang/osx-dictionary.el
