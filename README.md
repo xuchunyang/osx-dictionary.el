@@ -32,7 +32,7 @@ Below are commands you can use:
 * `osx-dictionary-search-pointer`Search word under pointer
 
 Here is a screenshot of a sample usage:
-![Imgur](http://i.imgur.com/pOjnLTW.png)
+![Imgur](http://i.imgur.com/BBg8ZHR.png)
 
 ## Todo
 - [ ] Save history
