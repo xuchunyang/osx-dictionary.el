@@ -6,6 +6,13 @@
 
 _Notes_: currently, only translation between Chinese and English is well supported.
 
+## Prerequisite
+* [结巴中文分词](https://github.com/fxsjy/jieba) for Chinese word segmentation (optional)
+
+GNU Emacs doesn't know much about Chinese, for example, it can't not *guess* most likely meaningful Chinese word under current cursor. [结巴中文分词](https://github.com/fxsjy/jieba) is used for this task.
+
+If you don't want to use [结巴中文分词](https://github.com/fxsjy/jieba), just customize `osx-dictionary-chinese-wordsplit-command` to `nil`.
+
 ## Installation
 
 1. Clone this repository

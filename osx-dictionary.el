@@ -45,6 +45,18 @@
 ;;
 
 ;;; Code:
+(require 'cl-lib)
+
+(defgroup osx-dictionary nil
+  "Mac OS X Dictionary.app interface for Emacs"
+  :group 'leim)
+
+(defcustom osx-dictionary-chinese-wordsplit-command
+  "echo %s | python -m jieba -q -d ' '"
+  "Set jieba (结巴中文分词) command for Chinese text segmentation.
+If you don't use it, just set it to nil"
+  :group 'osx-dictionary
+  :type 'string)
 
 (defvar osx-dictionary-mode-header-line
   '(
@@ -204,6 +216,43 @@ And display complete translations in other buffer."
                nil nil
                (osx-dictionary--region-or-word)))
 
+(defun osx-dictionary--chinese-word-prediction (current-word current-prefix)
+  "Predicate Chinese word from CURRENT-WORD from CURRENT-PREFIX."
+  (let ((a 0) (b 0))
+    (catch 'break
+      (dolist (word (split-string (shell-command-to-string
+                                   (format osx-dictionary-chinese-wordsplit-command
+                                           current-word))))
+        (cl-incf b (length word))
+        (if (<= a current-prefix b)
+            (throw 'break word)
+          (setq a b))))))
+
+(defun osx-dictionary--prefix-in-current-word (current-word)
+  "Get prefix in CURRENT-WORD."
+  (save-excursion
+    (let ((current-point (point))
+          end-of-word-point)
+      (forward-word)
+      (setq end-of-word-point (point))
+      (backward-word)
+      (if (< current-point (point))     ;End of current word
+          (length current-word)
+        (1+ (- (length current-word) (- end-of-word-point current-point)))))))
+
+(defun osx-dictionary--word-at-point ()
+  "Get English or Chinese word at point."
+  (let ((case-fold-search t)
+        (current-word (thing-at-point 'word))
+        (current-char (string (following-char))))
+    (if (or (string-match-p "\\`[a-z]*\\'" current-word)
+            (not osx-dictionary-chinese-wordsplit-command))
+        ;; English word or do use jieba (结巴中文分词)
+        current-word
+      ;; Chinese word
+      (osx-dictionary--chinese-word-prediction
+       current-word (osx-dictionary--prefix-in-current-word  current-word)))))
+
 (defun osx-dictionary--region-or-word ()
   "Return region or word around point.
 If `mark-active' on, return region string.
@@ -211,7 +260,7 @@ Otherwise return word around point."
   (if mark-active
       (buffer-substring-no-properties (region-beginning)
                                       (region-end))
-    (thing-at-point 'word)))
+    (osx-dictionary--word-at-point)))
 
 ;;;###autoload
 (defun osx-dictionary-bug-report ()
