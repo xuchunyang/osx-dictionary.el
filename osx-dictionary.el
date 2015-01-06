@@ -41,13 +41,8 @@
 
 ;;; Installation:
 ;;
-;; Put osx-dictionary.el to your `load-path'.
-;; And the following to your Emacs initialization file
+;; See README.md
 ;;
-;; (require 'osx-dictionary)
-;; Example key binding
-;; (global-set-key (kbd "C-c d") 'osx-dictionary-search-pointer)
-
 
 ;;; Code:
 
