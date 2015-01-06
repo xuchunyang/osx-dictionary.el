@@ -45,6 +45,18 @@
 ;;
 
 ;;; Code:
+(require 'cl-lib)
+
+(defgroup osx-dictionary nil
+  "Mac OS X Dictionary.app interface for Emacs"
+  :group 'leim)
+
+(defcustom osx-dictionary-chinese-wordsplit-command
+  "echo %s | python -m jieba -q -d ' '"
+  "Set jieba (结巴中文分词) command for Chinese text segmentation.
+If you don't use it, just set it to nil"
+  :group 'osx-dictionary
+  :type 'string)
 
 (defvar osx-dictionary-mode-header-line
   '(
@@ -209,9 +221,9 @@ And display complete translations in other buffer."
   (let ((a 0) (b 0))
     (catch 'break
       (dolist (word (split-string (shell-command-to-string
-                                   (format "echo %s | python -m jieba -q -d ' '"
+                                   (format osx-dictionary-chinese-wordsplit-command
                                            current-word))))
-        (incf b (length word))
+        (cl-incf b (length word))
         (if (<= a current-prefix b)
             (throw 'break word)
           (setq a b))))))
@@ -233,8 +245,9 @@ And display complete translations in other buffer."
   (let ((case-fold-search t)
         (current-word (thing-at-point 'word))
         (current-char (string (following-char))))
-    (if (string-match-p "\\`[a-z]*\\'" current-word)
-        ;; English word
+    (if (or (string-match-p "\\`[a-z]*\\'" current-word)
+            (not osx-dictionary-chinese-wordsplit-command))
+        ;; English word or do use jieba (结巴中文分词)
         current-word
       ;; Chinese word
       (osx-dictionary--chinese-word-prediction
