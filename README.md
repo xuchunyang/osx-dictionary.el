@@ -2,22 +2,28 @@
 ---
 
 ## Introduction
-`osx-dictionary.el` is Emacs port of [dictionary.vim](https://github.com/itchyny/dictionary.vim). `osx-dictionary.el` provides functions which invoke Mac OS X's *Dictionary.app*.
+`osx-dictionary.el` is Emacs port of [dictionary.vim](https://github.com/itchyny/dictionary.vim). `osx-dictionary.el` provides functions which invoke *Dictionary.app* from Mac OS X.
 
 _Notes_: currently, only translation between Chinese and English is well supported.
 
 ## Installation
 
-1. Compile & install `osx-dictionary`
-
-   `osx-dictionary` is a simple CommandLine utility to access *Dictionary.app*
-
+1. Clone this repository
    ```sh
-   clang -O3 -framework CoreServices -framework Foundation osx-dictionary.m -o osx-dictionary
-   sudo mv osx-dictionary /usr/local/bin
+   $ git clone https://github.com/xuchunyang/osx-dictionary.el
+   $ cd osx-dictionary.el
    ```
 
-2. Put `osx-dictionary.el/` to your `load-path` and add the following to
+2. Compile & install `osx-dictionary`
+
+   ```sh
+   $ clang -O3 -framework CoreServices -framework Foundation osx-dictionary.m -o osx-dictionary
+   $ sudo mv osx-dictionary /usr/local/bin
+   ```
+
+   _`osx-dictionary` is a simple CommandLine utility to access *Dictionary.app*_
+
+3. Put `osx-dictionary.el/` to your `load-path` and add the following to
    your Emacs initialization file
 
    ```emacs-lisp
