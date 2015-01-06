@@ -29,9 +29,9 @@
 ;;
 ;; Below are commands you can use:
 ;; `osx-dictionary-search-word'
-;; Search word from input via minibuffer
+;; Search word from input
 ;; `osx-dictionary-search-pointer'
-;; Search word under pointer (cursor)
+;; Search word at point
 ;;
 ;; Tips:
 ;;

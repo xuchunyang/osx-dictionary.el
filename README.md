@@ -43,8 +43,8 @@ If you don't want to use [结巴中文分词](https://github.com/fxsjy/jieba), j
 ## Usage
 Below are commands you can use:
 
-* `osx-dictionary-search-word` Search word from input via minibuffer
-* `osx-dictionary-search-pointer`Search word under pointer
+* `osx-dictionary-search-word` Search word from input
+* `osx-dictionary-search-pointer`Search word at point
 
 Here is a screenshot of a sample usage:
 ![Imgur](http://i.imgur.com/BBg8ZHR.png)
