@@ -204,14 +204,26 @@ And display complete translations in other buffer."
                nil nil
                (osx-dictionary--region-or-word)))
 
-(defun osx-dictionary--chinese-word-prediction (current-word current-char)
-  "Predicate Chinese word from CURRENT-WORD under CURRENT-CHAR."
-  (catch 'break
-    (dolist (word (split-string (shell-command-to-string
-                                 (format "echo %s | python -m jieba -q -d ' '"
-                                         current-word))))
-      (when (string-match-p current-char word)
-        (throw 'break word)))))
+(defun osx-dictionary--chinese-word-prediction (current-word current-prefix)
+  "Predicate Chinese word from CURRENT-WORD from CURRENT-PREFIX."
+  (let ((a 0) (b 0))
+    (catch 'break
+      (dolist (word (split-string (shell-command-to-string
+                                   (format "echo %s | python -m jieba -q -d ' '"
+                                           current-word))))
+        (incf b (length word))
+        (if (<= a current-prefix b)
+            (throw 'break word)
+          (setq a b))))))
+
+(defun osx-dictionary--prefix-from-current-word ()
+  "Get prefix from current word."
+  (save-excursion
+    (let ((current-point (point)))
+      (if (= current-point (point-at-bol))
+          1
+        (backward-word)
+        (1+ (- current-point (point)))))))
 
 (defun osx-dictionary--word-at-point ()
   "Get English or Chinese word at point."
@@ -222,7 +234,8 @@ And display complete translations in other buffer."
         ;; English word
         current-word
       ;; Chinese word
-      (osx-dictionary--chinese-word-prediction current-word current-char))))
+      (osx-dictionary--chinese-word-prediction
+       current-word (osx-dictionary--prefix-from-current-word)))))
 
 (defun osx-dictionary--region-or-word ()
   "Return region or word around point.
