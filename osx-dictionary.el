@@ -216,14 +216,17 @@ And display complete translations in other buffer."
             (throw 'break word)
           (setq a b))))))
 
-(defun osx-dictionary--prefix-from-current-word ()
-  "Get prefix from current word."
+(defun osx-dictionary--prefix-in-current-word (current-word)
+  "Get prefix in CURRENT-WORD."
   (save-excursion
-    (let ((current-point (point)))
-      (if (= current-point (point-at-bol))
-          1
-        (backward-word)
-        (1+ (- current-point (point)))))))
+    (let ((current-point (point))
+          end-of-word-point)
+      (forward-word)
+      (setq end-of-word-point (point))
+      (backward-word)
+      (if (< current-point (point))     ;End of current word
+          (length current-word)
+        (1+ (- (length current-word) (- end-of-word-point current-point)))))))
 
 (defun osx-dictionary--word-at-point ()
   "Get English or Chinese word at point."
@@ -235,7 +238,7 @@ And display complete translations in other buffer."
         current-word
       ;; Chinese word
       (osx-dictionary--chinese-word-prediction
-       current-word (osx-dictionary--prefix-from-current-word)))))
+       current-word (osx-dictionary--prefix-in-current-word  current-word)))))
 
 (defun osx-dictionary--region-or-word ()
   "Return region or word around point.
