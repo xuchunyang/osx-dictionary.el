@@ -8,7 +8,7 @@ _Notes_: currently, only translation between Chinese and English is well support
 
 ## Installation
 
-1. Compile & install `dictionary`
+1. Compile & install `osx-dictionary`
 
    `osx-dictionary` is a simple CommandLine utility to access *Dictionary.app*
 
