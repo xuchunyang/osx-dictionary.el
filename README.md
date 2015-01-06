@@ -2,9 +2,9 @@
 ---
 
 ## Introduction
-`osx-dictionary.el` is Emacs port of [dictionary.vim](https://github.com/itchyny/dictionary.vim). `osx-dictionary.el` provides functions which invoke *Dictionary.app* from Mac OS X.
+`osx-dictionary.el` is inspired by [dictionary.vim](https://github.com/itchyny/dictionary.vim). `osx-dictionary.el` provides functions which invoke *Dictionary.app* from Mac OS X.
 
-_Notes_: currently, only translation between Chinese and English is well supported.
+_Notes_: translation between Chinese and English is well supported.
 
 ## Prerequisite
 * [结巴中文分词](https://github.com/fxsjy/jieba) for Chinese word segmentation (optional)
@@ -54,4 +54,4 @@ Here is a screenshot of a sample usage:
 - [ ] Improve regex for highlight
   - [ ] Add more keywords, for example, "名" and "代"
   - [ ] Adopt more precise matching
-- [ ] Use Chinese text segmentation for better Chinese translation
+- [x] Use Chinese text segmentation for better Chinese translation
