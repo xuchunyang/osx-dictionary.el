@@ -204,6 +204,26 @@ And display complete translations in other buffer."
                nil nil
                (osx-dictionary--region-or-word)))
 
+(defun osx-dictionary--chinese-word-prediction (current-word current-char)
+  "Predicate Chinese word from CURRENT-WORD under CURRENT-CHAR."
+  (catch 'break
+    (dolist (word (split-string (shell-command-to-string
+                                 (format "echo %s | python -m jieba -q -d ' '"
+                                         current-word))))
+      (when (string-match-p current-char word)
+        (throw 'break word)))))
+
+(defun osx-dictionary--word-at-point ()
+  "Get English or Chinese word at point."
+  (let ((case-fold-search t)
+        (current-word (thing-at-point 'word))
+        (current-char (string (following-char))))
+    (if (string-match-p "\\`[a-z]*\\'" current-word)
+        ;; English word
+        current-word
+      ;; Chinese word
+      (osx-dictionary--chinese-word-prediction current-word current-char))))
+
 (defun osx-dictionary--region-or-word ()
   "Return region or word around point.
 If `mark-active' on, return region string.
@@ -211,7 +231,7 @@ Otherwise return word around point."
   (if mark-active
       (buffer-substring-no-properties (region-beginning)
                                       (region-end))
-    (thing-at-point 'word)))
+    (osx-dictionary--word-at-point)))
 
 ;;;###autoload
 (defun osx-dictionary-bug-report ()
