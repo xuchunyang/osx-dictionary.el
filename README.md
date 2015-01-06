@@ -4,6 +4,8 @@
 ## Introduction
 `osx-dictionary.el` is Emacs port of [dictionary.vim](https://github.com/itchyny/dictionary.vim). `osx-dictionary.el` provides functions which invoke Mac OS X's *Dictionary.app*.
 
+_Notes_: currently, only translation between Chinese and English is well supported.
+
 ## Installation
 
 1. Compile & install `dictionary`
@@ -15,7 +17,7 @@
    sudo mv osx-dictionary /usr/local/bin
    ```
 
-2. Put `osx-dictionary.el` to your `load-path` and add the following to
+2. Put `osx-dictionary.el/` to your `load-path` and add the following to
    your Emacs initialization file
 
    ```emacs-lisp
@@ -35,7 +37,8 @@ Here is a screenshot of a sample usage:
 ![Imgur](http://i.imgur.com/BBg8ZHR.png)
 
 ## Todo
-- [ ] Save history
-- [ ] Improve regex
+- [ ] Save search history
+- [ ] Improve regex for highlight
   - [ ] Add more keywords, for example, "名" and "代"
   - [ ] Adopt more precise matching
+- [ ] Use Chinese text segmentation for better Chinese translation
