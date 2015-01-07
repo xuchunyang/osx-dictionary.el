@@ -68,6 +68,9 @@ It should be located somewhere of your PATH, if not, use the full path instead."
 
 (defconst osx-dictionary-buffer-name "*osx-dictionary*")
 
+(defconst osx-dictionary--load-dir (file-name-as-directory (file-name-directory
+                                                            load-file-name)))
+
 (defvar osx-dictionary-mode-header-line
   '(
     (:propertize "i" face mode-line-buffer-id)
