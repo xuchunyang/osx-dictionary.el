@@ -229,15 +229,18 @@ And display complete translations in other buffer."
 
 (defun osx-dictionary--offset-in-current-word (current-word)
   "Get offset in CURRENT-WORD."
-  (save-excursion
-    (let ((current-point (point))
-          end-of-word-point)
-      (forward-word)
-      (setq end-of-word-point (point))
-      (backward-word)
-      (if (< current-point (point))     ;End of current word
-          (length current-word)
-        (1+ (- (length current-word) (- end-of-word-point current-point)))))))
+  (if (= (point) (point-max))           ; Point at end of buffer
+      (length current-word)
+    (save-excursion
+      (let ((current-point (point))
+            end-of-word-point)
+        (forward-word)
+        (setq end-of-word-point (point))
+        (backward-word)
+        (if (< current-point (point))   ; Point at the end current word
+            (length current-word)
+          (1+ (- (length current-word)
+                 (- end-of-word-point current-point))))))))
 
 (defun osx-dictionary--word-at-point ()
   "Get English or Chinese word at point."
