@@ -219,14 +219,13 @@ And display complete translations in other buffer."
 (defun osx-dictionary--chinese-word-prediction (current-word current-prefix)
   "Predicate Chinese word from CURRENT-WORD from CURRENT-PREFIX."
   (let ((a 0) (b 0))
-    (catch 'break
-      (dolist (word (split-string (shell-command-to-string
-                                   (format osx-dictionary-chinese-wordsplit-command
-                                           current-word))))
-        (cl-incf b (length word))
-        (if (<= a current-prefix b)
-            (throw 'break word)
-          (setq a b))))))
+    (dolist (word (split-string (shell-command-to-string
+                                 (format osx-dictionary-chinese-wordsplit-command
+                                         current-word))))
+      (cl-incf b (length word))
+      (if (<= a current-prefix b)
+          (cl-return word)
+        (setq a b)))))
 
 (defun osx-dictionary--prefix-in-current-word (current-word)
   "Get prefix in CURRENT-WORD."
