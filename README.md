@@ -21,16 +21,7 @@ If you don't want to use [结巴中文分词](https://github.com/fxsjy/jieba), j
    $ cd osx-dictionary.el
    ```
 
-2. Compile & install `osx-dictionary`
-
-   ```sh
-   $ clang -O3 -framework CoreServices -framework Foundation osx-dictionary.m -o osx-dictionary
-   $ sudo mv osx-dictionary /usr/local/bin
-   ```
-
-   _`osx-dictionary` is a simple CommandLine utility to access *Dictionary.app*_
-
-3. Put `osx-dictionary.el/` to your `load-path` and add the following to
+2. Put `osx-dictionary.el/` to your `load-path` and add the following to
    your Emacs initialization file
 
    ```emacs-lisp
