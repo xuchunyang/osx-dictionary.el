@@ -54,9 +54,18 @@
 (defcustom osx-dictionary-chinese-wordsplit-command
   "echo %s | python -m jieba -q -d ' '"
   "Set jieba (结巴中文分词) command for Chinese text segmentation.
-If you don't use it, just set it to nil"
+If you don't use it, just set it to \"\"."
   :group 'osx-dictionary
   :type 'string)
+
+(defcustom osx-dictionary-cli
+  "osx-dictionary"
+  "The name of executable file compiled from \"osx-dictionary.m\".
+It should be located somewhere of your PATH, if not, use the full path instead."
+  :group 'osx-dictionary
+  :type 'string)
+
+(defconst osx-dictionary-buffer-name "*osx-dictionary*")
 
 (defvar osx-dictionary-mode-header-line
   '(
@@ -104,8 +113,6 @@ If you don't use it, just set it to nil"
     (define-key map "?" 'describe-mode)
     map)
   "Keymap for `osx-dictionary-mode'.")
-
-(defconst osx-dictionary-buffer-name "*osx-dictionary*")
 
 (defvar osx-dictionary-previous-window-configuration nil
   "Window configuration before switching to dictionary buffer.")
@@ -163,7 +170,8 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
 
 (defun osx-dictionary--goto-dictionary ()
   "Switch to osx-dictionary buffer in other window."
-  (setq osx-dictionary-previous-window-configuration (current-window-configuration))
+  (setq osx-dictionary-previous-window-configuration
+        (current-window-configuration))
   (let* ((buffer (osx-dictionary--get-buffer))
          (window (get-buffer-window buffer)))
     (if (null window)
@@ -172,43 +180,48 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
 
 (defun osx-dictionary--search (word)
   "Search WORD."
-  (shell-command-to-string (format "osx-dictionary %s" word)))
+  (shell-command-to-string (format "%s %s"
+                                   osx-dictionary-cli word)))
 
 ;;;###autoload
 (defun osx-dictionary-search-word ()
   "Prompt for input WORD.
 And show translation in other buffer."
   (interactive)
-  (let ((word (osx-dictionary--prompt-input)))
-    (with-current-buffer (get-buffer-create osx-dictionary-buffer-name)
-      (setq buffer-read-only nil)
-      (erase-buffer)
-      (let ((progress-reporter
-             (make-progress-reporter (format "Searching (%s)..." word)
-                                     nil nil)))
-        (insert (osx-dictionary--search word))
-        (progress-reporter-done progress-reporter))
-      (osx-dictionary--goto-dictionary)
-      (goto-char (point-min))
-      (setq buffer-read-only t))))
+  (if (not (executable-find osx-dictionary-cli))
+      (message "%s not found." osx-dictionary-cli)
+    (let ((word (osx-dictionary--prompt-input)))
+      (with-current-buffer (get-buffer-create osx-dictionary-buffer-name)
+        (setq buffer-read-only nil)
+        (erase-buffer)
+        (let ((progress-reporter
+               (make-progress-reporter (format "Searching (%s)..." word)
+                                       nil nil)))
+          (insert (osx-dictionary--search word))
+          (progress-reporter-done progress-reporter))
+        (osx-dictionary--goto-dictionary)
+        (goto-char (point-min))
+        (setq buffer-read-only t)))))
 
 ;;;###autoload
 (defun osx-dictionary-search-pointer ()
   "Get current word.
 And display complete translations in other buffer."
   (interactive)
-  (let ((word (osx-dictionary--region-or-word)))
-    (with-current-buffer (get-buffer-create osx-dictionary-buffer-name)
-      (setq buffer-read-only nil)
-      (erase-buffer)
-      (let ((progress-reporter
-             (make-progress-reporter (format "Searching (%s)..." word)
-                                     nil nil)))
-        (insert (osx-dictionary--search word))
-        (progress-reporter-done progress-reporter))
-      (osx-dictionary--goto-dictionary)
-      (goto-char (point-min))
-      (setq buffer-read-only t))))
+  (if (not (executable-find osx-dictionary-cli))
+      (message "%s not found." osx-dictionary-cli)
+    (let ((word (osx-dictionary--region-or-word)))
+      (with-current-buffer (get-buffer-create osx-dictionary-buffer-name)
+        (setq buffer-read-only nil)
+        (erase-buffer)
+        (let ((progress-reporter
+               (make-progress-reporter (format "Searching (%s)..." word)
+                                       nil nil)))
+          (insert (osx-dictionary--search word))
+          (progress-reporter-done progress-reporter))
+        (osx-dictionary--goto-dictionary)
+        (goto-char (point-min))
+        (setq buffer-read-only t)))))
 
 (defun osx-dictionary--prompt-input ()
   "Prompt input object for translate."
@@ -243,7 +256,7 @@ And display complete translations in other buffer."
         (current-word (thing-at-point 'word t))
         (current-char (string (following-char))))
     (if (or (string-match-p "\\`[a-z]*\\'" current-word)
-            (not osx-dictionary-chinese-wordsplit-command))
+            (= 0 (length osx-dictionary-chinese-wordsplit-command)))
         ;; English word or do use jieba (结巴中文分词)
         current-word
       ;; Chinese word
