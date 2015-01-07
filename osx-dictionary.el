@@ -227,20 +227,15 @@ And display complete translations in other buffer."
           (cl-return word)
         (setq a b)))))
 
-(defun osx-dictionary--offset-in-current-word (current-word)
-  "Get offset in CURRENT-WORD."
-  (if (= (point) (point-max))           ; Point at end of buffer
-      (length current-word)
-    (save-excursion
-      (let ((current-point (point))
-            end-of-word-point)
-        (forward-word)
-        (setq end-of-word-point (point))
-        (backward-word)
-        (if (< current-point (point))   ; Point at the end current word
-            (length current-word)
-          (1+ (- (length current-word)
-                 (- end-of-word-point current-point))))))))
+(defun osx-dictionary--offset-in-current-word ()
+  "Get offset in current word."
+  (let* ((boundary (bounds-of-thing-at-point 'word))
+         (beginning-pos (car boundary))
+         (end-pos (cdr boundary))
+         (current-pos (point)))
+    (if (= current-pos end-pos)
+        (- end-pos beginning-pos)
+      (1+ (- current-pos beginning-pos)))))
 
 (defun osx-dictionary--word-at-point ()
   "Get English or Chinese word at point."
@@ -253,7 +248,7 @@ And display complete translations in other buffer."
         current-word
       ;; Chinese word
       (osx-dictionary--chinese-word-prediction
-       current-word (osx-dictionary--offset-in-current-word  current-word)))))
+       current-word (osx-dictionary--offset-in-current-word)))))
 
 (defun osx-dictionary--region-or-word ()
   "Return region or word around point.
