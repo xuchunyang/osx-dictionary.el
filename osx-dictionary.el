@@ -181,48 +181,59 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
 
 (defun osx-dictionary--search (word)
   "Search WORD."
-  (shell-command-to-string (format "%s %s"
-                                   osx-dictionary-cli word)))
+  (shell-command-to-string
+   (concat
+    (osx-dictionary-cli-find-or-recompile) " " (shell-quote-argument word))))
+
+(defun osx-dictionary-recompile ()
+  "Create or replace the `osx-dictionary-cli' executable using the latest code."
+  (interactive)
+  (let ((default-directory osx-dictionary--load-dir))
+    (shell-command (concat "clang -O3 -framework CoreServices -framework Foundation osx-dictionary.m -o "
+                           (shell-quote-argument osx-dictionary-cli)))
+    (expand-file-name osx-dictionary-cli)))
+
+(defun osx-dictionary-cli-find-or-recompile ()
+  (or
+   (executable-find (expand-file-name osx-dictionary-cli osx-dictionary--load-dir))
+   (executable-find osx-dictionary-cli)
+   (osx-dictionary-recompile)))
 
 ;;;###autoload
 (defun osx-dictionary-search-word ()
   "Prompt for input WORD.
 And show translation in other buffer."
   (interactive)
-  (if (not (executable-find osx-dictionary-cli))
-      (message "%s not found." osx-dictionary-cli)
-    (let ((word (osx-dictionary--prompt-input)))
-      (with-current-buffer (get-buffer-create osx-dictionary-buffer-name)
-        (setq buffer-read-only nil)
-        (erase-buffer)
-        (let ((progress-reporter
-               (make-progress-reporter (format "Searching (%s)..." word)
-                                       nil nil)))
-          (insert (osx-dictionary--search word))
-          (progress-reporter-done progress-reporter))
-        (osx-dictionary--goto-dictionary)
-        (goto-char (point-min))
-        (setq buffer-read-only t)))))
+  (let ((word (osx-dictionary--prompt-input)))
+    (with-current-buffer (get-buffer-create osx-dictionary-buffer-name)
+      (setq buffer-read-only nil)
+      (erase-buffer)
+      (let ((progress-reporter
+             (make-progress-reporter (format "Searching (%s)..." word)
+                                     nil nil)))
+        (insert (osx-dictionary--search word))
+        (progress-reporter-done progress-reporter))
+      (osx-dictionary--goto-dictionary)
+      (goto-char (point-min))
+      (setq buffer-read-only t))))
 
 ;;;###autoload
 (defun osx-dictionary-search-pointer ()
   "Get current word.
 And display complete translations in other buffer."
   (interactive)
-  (if (not (executable-find osx-dictionary-cli))
-      (message "%s not found." osx-dictionary-cli)
-    (let ((word (osx-dictionary--region-or-word)))
-      (with-current-buffer (get-buffer-create osx-dictionary-buffer-name)
-        (setq buffer-read-only nil)
-        (erase-buffer)
-        (let ((progress-reporter
-               (make-progress-reporter (format "Searching (%s)..." word)
-                                       nil nil)))
-          (insert (osx-dictionary--search word))
-          (progress-reporter-done progress-reporter))
-        (osx-dictionary--goto-dictionary)
-        (goto-char (point-min))
-        (setq buffer-read-only t)))))
+  (let ((word (osx-dictionary--region-or-word)))
+    (with-current-buffer (get-buffer-create osx-dictionary-buffer-name)
+      (setq buffer-read-only nil)
+      (erase-buffer)
+      (let ((progress-reporter
+             (make-progress-reporter (format "Searching (%s)..." word)
+                                     nil nil)))
+        (insert (osx-dictionary--search word))
+        (progress-reporter-done progress-reporter))
+      (osx-dictionary--goto-dictionary)
+      (goto-char (point-min))
+      (setq buffer-read-only t))))
 
 (defun osx-dictionary--prompt-input ()
   "Prompt input object for translate."
