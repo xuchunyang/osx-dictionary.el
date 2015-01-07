@@ -216,19 +216,19 @@ And display complete translations in other buffer."
                nil nil
                (osx-dictionary--region-or-word)))
 
-(defun osx-dictionary--chinese-word-prediction (current-word current-prefix)
-  "Predicate Chinese word from CURRENT-WORD from CURRENT-PREFIX."
+(defun osx-dictionary--chinese-word-prediction (current-word current-offset)
+  "Predicate Chinese word from CURRENT-WORD from CURRENT-OFFSET."
   (let ((a 0) (b 0))
     (dolist (word (split-string (shell-command-to-string
                                  (format osx-dictionary-chinese-wordsplit-command
                                          current-word))))
       (cl-incf b (length word))
-      (if (<= a current-prefix b)
+      (if (<= a current-offset b)
           (cl-return word)
         (setq a b)))))
 
-(defun osx-dictionary--prefix-in-current-word (current-word)
-  "Get prefix in CURRENT-WORD."
+(defun osx-dictionary--offset-in-current-word (current-word)
+  "Get offset in CURRENT-WORD."
   (save-excursion
     (let ((current-point (point))
           end-of-word-point)
@@ -250,7 +250,7 @@ And display complete translations in other buffer."
         current-word
       ;; Chinese word
       (osx-dictionary--chinese-word-prediction
-       current-word (osx-dictionary--prefix-in-current-word  current-word)))))
+       current-word (osx-dictionary--offset-in-current-word  current-word)))))
 
 (defun osx-dictionary--region-or-word ()
   "Return region or word around point.
