@@ -1,4 +1,4 @@
-;;; osx-dictionary.el --- Interface for Dictionary.app  -*- coding: utf-8-unix; -*-
+;;; osx-dictionary.el --- Interface for OSX Dictionary.app  -*- coding: utf-8-unix; -*-
 
 ;; Copyright (C) 2014-2015 by Chunyang Xu
 
@@ -22,7 +22,7 @@
 
 ;;; Commentary:
 ;;
-;; Interface for Dictionary.app
+;; Interface for OSX Dictionary.app
 ;;
 ;; Translation word by Dictionary.app, and display translation use
 ;; buffer.
