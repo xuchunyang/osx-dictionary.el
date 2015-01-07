@@ -4,6 +4,7 @@
 
 ;; Author: Chunyang Xu <xuchunyang56@gmail.com>
 ;; URL: https://github.com/xuchunyang/osx-dictionary.el
+;; Package-Requires: ((cl-lib "0.5"))
 ;; Version: 0.1
 ;; keywords: help, dictionary, tools
 
