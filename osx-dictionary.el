@@ -124,7 +124,7 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
   (interactive)
   (save-excursion
     (goto-char (point-min))
-    (shell-command (format "open dict://%s" (thing-at-point 'word) ))))
+    (shell-command (format "open dict://%s" (thing-at-point 'word t) ))))
 
 (defun osx-dictionary-open-youdao ()
   "Open current searched `word' in http://dict.youdao.com."
@@ -132,7 +132,7 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
   (save-excursion
     (goto-char (point-min))
     (shell-command (format "open http://dict.youdao.com/search\\?q=%s"
-                           (thing-at-point 'word)))))
+                           (thing-at-point 'word t)))))
 
 (defun osx-dictionary-open-cambridge ()
   "Open current searched `word' in http://dictionary.cambridge.org/dictionary/american-english/."
@@ -141,7 +141,7 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
     (goto-char (point-min))
     (shell-command
      (format "open http://dictionary.cambridge.org/dictionary/american-english/%s"
-             (thing-at-point 'word)))))
+             (thing-at-point 'word t)))))
 
 (defun osx-dictionary-quit ()
   "Quit osx-dictionary: reselect previously selected buffer."
@@ -240,7 +240,7 @@ And display complete translations in other buffer."
 (defun osx-dictionary--word-at-point ()
   "Get English or Chinese word at point."
   (let ((case-fold-search t)
-        (current-word (thing-at-point 'word))
+        (current-word (thing-at-point 'word t))
         (current-char (string (following-char))))
     (if (or (string-match-p "\\`[a-z]*\\'" current-word)
             (not osx-dictionary-chinese-wordsplit-command))
