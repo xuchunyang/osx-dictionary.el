@@ -1,4 +1,4 @@
-;;; osx-dictionary.el --- Interface for Dictionary.app
+;;; osx-dictionary.el --- Interface for Dictionary.app  -*- coding: utf-8-unix; -*-
 
 ;; Copyright (C) 2014-2015 by Chunyang Xu
 
