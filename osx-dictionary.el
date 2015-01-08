@@ -25,8 +25,7 @@
 ;;
 ;; Interface for OSX Dictionary.app
 ;;
-;; Translation word by Dictionary.app, and display translation use
-;; buffer.
+;; Translation word by Dictionary.app, and display result using buffer.
 ;;
 ;; Below are commands you can use:
 ;; `osx-dictionary-search-word'
@@ -42,7 +41,7 @@
 
 ;;; Installation:
 ;;
-;; See README.md
+;; `This package is available on Melpa.
 ;;
 
 ;;; Code:

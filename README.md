@@ -2,7 +2,7 @@
 ---
 
 ## Introduction
-`osx-dictionary.el` is inspired by [dictionary.vim](https://github.com/itchyny/dictionary.vim). `osx-dictionary.el` provides functions which invoke *Dictionary.app* from Mac OS X.
+`osx-dictionary` is inspired by [dictionary.vim](https://github.com/itchyny/dictionary.vim). `osx-dictionary` provides functions which invoke *Dictionary.app* from Mac OS X.
 
 _Notes_: translation between Chinese and English is well supported.
 
@@ -13,23 +13,11 @@ GNU Emacs doesn't know much about Chinese, for example, it can't not *guess* mos
 
 If you don't want to use [结巴中文分词](https://github.com/fxsjy/jieba), just customize `osx-dictionary-chinese-wordsplit-command` to `""`.
 
-## Installation
+## Install
+`osx-dictionary` is available on Melpa, and that's the recommended way of
+installing it, i.e.
 
-1. Clone this repository
-   ```sh
-   $ git clone https://github.com/xuchunyang/osx-dictionary.el
-   $ cd osx-dictionary.el
-   ```
-
-2. Put `osx-dictionary.el/` to your `load-path` and add the following to
-   your Emacs initialization file
-
-   ```emacs-lisp
-   (require osx-'dictionary)
-   ;; Example key binding
-   (global-set-key (kbd "C-c d") 'osx-dictionary-search-pointer)
-   (global-set-key (kbd "C-c c") 'osx-dictionary-search-word)
-   ```
+`M-x package-install RET osx-dictionary RET`
 
 ## Usage
 Below are commands you can use:
