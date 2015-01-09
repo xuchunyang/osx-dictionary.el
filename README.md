@@ -22,8 +22,8 @@ installing it, i.e.
 ## Usage
 Below are commands you can use:
 
-* `osx-dictionary-search-word` Search word from input
-* `osx-dictionary-search-pointer`Search word at point
+* `osx-dictionary-search-input` Search input word and display result with buffer
+* `osx-dictionary-search-pointer` Search word around and display result with buffer
 
 Here is a screenshot of a sample usage:
 ![Imgur](http://i.imgur.com/BBg8ZHR.png)

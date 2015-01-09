@@ -28,10 +28,10 @@
 ;; Translation word by Dictionary.app, and display result using buffer.
 ;;
 ;; Below are commands you can use:
-;; `osx-dictionary-search-word'
-;; Search word from input
+;; `osx-dictionary-search-input'
+;; Search input word and display result with buffer
 ;; `osx-dictionary-search-pointer'
-;; Search word at point
+;; Search word around and display result with buffer
 ;;
 ;; Tips:
 ;;
@@ -99,7 +99,7 @@ It should be located somewhere of your PATH, if not, use the full path instead."
   (let ((map (make-sparse-keymap)))
     ;; Dictionary command
     (define-key map "q" 'osx-dictionary-quit)
-    (define-key map "i" 'osx-dictionary-search-word)
+    (define-key map "i" 'osx-dictionary-search-input)
     (define-key map "o" 'osx-dictionary-open-dictionary-app)
     (define-key map "y" 'osx-dictionary-open-youdao)
     (define-key map "c" 'osx-dictionary-open-cambridge)
@@ -202,9 +202,8 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
    (osx-dictionary-recompile)))
 
 ;;;###autoload
-(defun osx-dictionary-search-word ()
-  "Prompt for input WORD.
-And show translation in other buffer."
+(defun osx-dictionary-search-input ()
+  "Search input word and display result with buffer."
   (interactive)
   (let ((word (osx-dictionary--prompt-input)))
     (with-current-buffer (get-buffer-create osx-dictionary-buffer-name)
@@ -221,8 +220,7 @@ And show translation in other buffer."
 
 ;;;###autoload
 (defun osx-dictionary-search-pointer ()
-  "Get current word.
-And display complete translations in other buffer."
+  "Search word around and display result with buffer."
   (interactive)
   (let ((word (osx-dictionary--region-or-word)))
     (with-current-buffer (get-buffer-create osx-dictionary-buffer-name)
@@ -267,11 +265,10 @@ And display complete translations in other buffer."
 (defun osx-dictionary--word-at-point ()
   "Get English or Chinese word at point."
   (let ((case-fold-search t)
-        (current-word (thing-at-point 'word t))
-        (current-char (string (following-char))))
+        (current-word (thing-at-point 'word t)))
     (if (or (string-match-p "\\`[a-z]*\\'" current-word)
-            (= 0 (length osx-dictionary-chinese-wordsplit-command)))
-        ;; English word or do use jieba (结巴中文分词)
+            (zerop (length osx-dictionary-chinese-wordsplit-command)))
+        ;; English word or do not use jieba (结巴中文分词)
         current-word
       ;; Chinese word
       (osx-dictionary--chinese-word-prediction
