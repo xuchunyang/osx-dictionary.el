@@ -1,5 +1,6 @@
 # OSX *Dictionary.app* interface for Emacs
 ---
+[![MELPA](http://melpa.org/packages/osx-dictionary-badge.svg)](http://melpa.org/#/osx-dictionary)
 
 ## Introduction
 `osx-dictionary` is inspired by [dictionary.vim](https://github.com/itchyny/dictionary.vim). `osx-dictionary` provides functions which invoke *Dictionary.app* from Mac OS X.
@@ -14,6 +15,7 @@ GNU Emacs doesn't know much about Chinese, for example, it can't not *guess* mos
 If you don't want to use [结巴中文分词](https://github.com/fxsjy/jieba), just customize `osx-dictionary-chinese-wordsplit-command` to `""`.
 
 ## Install
+
 `osx-dictionary` is available on Melpa, and that's the recommended way of
 installing it, i.e.
 
