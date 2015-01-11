@@ -7,12 +7,13 @@
 
 _Notes_: translation between Chinese and English is well supported.
 
-## Prerequisite
-* [结巴中文分词](https://github.com/fxsjy/jieba) for Chinese word segmentation (optional)
+## Requirement
 
-GNU Emacs doesn't know much about Chinese, for example, it can't not *guess* most likely meaningful Chinese word under current cursor. [结巴中文分词](https://github.com/fxsjy/jieba) is used for this task.
+* [chinese-word-at-point](https://github.com/xuchunyang/chinese-word-at-point.el) to get (most likely) Chinese word under the cursor
 
-If you don't want to use [结巴中文分词](https://github.com/fxsjy/jieba), just customize `osx-dictionary-chinese-wordsplit-command` to `""`.
+If you don't use Chinese, no needs to care about it, features provided by
+[chinese-word-at-point](https://github.com/xuchunyang/chinese-word-at-point.el)
+is disabled by default.
 
 ## Install
 
@@ -21,11 +22,29 @@ installing it, i.e.
 
 `M-x package-install RET osx-dictionary RET`
 
+In this way, the requirement,
+[chinese-word-at-point](https://github.com/xuchunyang/chinese-word-at-point.el),
+will be installed automatically.
+
 ## Usage
 Below are commands you can use:
 
 * `osx-dictionary-search-input` Search input word and display result with buffer
 * `osx-dictionary-search-pointer` Search word around and display result with buffer
+
+GNU Emacs itself has no idea what a *Chinese word* is, If you want Emacs to get
+*Chinese word* under the cursor, you have to set
+`osx-dictionary-use-chinese-text-segmentation` to `t` by yourself. Please refer
+to
+[chinese-word-at-point](https://github.com/xuchunyang/chinese-word-at-point.el)
+for more info.
+
+Below is my configuration for this package:
+```elisp
+(setq osx-dictionary-use-chinese-text-segmentation t) ; Support Chinese word
+(global-set-key (kbd "C-c d") 'osx-dictionary-search-pointer)
+;; (global-set-key (kbd "C-c i") 'osx-dictionary-search-input)
+```
 
 Here is a screenshot of a sample usage:
 ![Imgur](http://i.imgur.com/BBg8ZHR.png)

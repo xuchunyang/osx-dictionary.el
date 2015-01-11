@@ -4,9 +4,9 @@
 
 ;; Author: Chunyang Xu <xuchunyang56@gmail.com>
 ;; URL: https://github.com/xuchunyang/osx-dictionary.el
-;; Package-Requires: ((cl-lib "0.5"))
+;; Package-Requires: ((cl-lib "0.5") (chinese-word-at-point "0.1"))
 ;; Version: 0.1
-;; keywords: help, dictionary, tools
+;; keywords: dictionary
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -46,24 +46,23 @@
 
 ;;; Code:
 (require 'cl-lib)
+(require 'chinese-word-at-point)
 
 (defgroup osx-dictionary nil
   "Mac OS X Dictionary.app interface for Emacs"
   :group 'leim)
 
-(defcustom osx-dictionary-chinese-wordsplit-command
-  "echo %s | python -m jieba -q -d ' '"
-  "Set jieba (结巴中文分词) command for Chinese text segmentation.
-If you don't use it, just set it to \"\"."
-  :group 'osx-dictionary
-  :type 'string)
+(defcustom osx-dictionary-use-chinese-text-segmentation nil
+  "Set to t to enable Chinese text segmentation.
 
-(defcustom osx-dictionary-cli
-  "osx-dictionary"
-  "The name of executable file compiled from \"osx-dictionary.m\".
-It should be located somewhere of your PATH, if not, use the full path instead."
+A external Chinese text segmentation tool is required, refer to
+URL `https://github.com/xuchunyang/chinese-word-at-point.el'
+for more info."
   :group 'osx-dictionary
-  :type 'string)
+  :type 'boolean)
+
+(defconst osx-dictionary-cli "osx-dictionary"
+  "The name of executable file compiled from \"osx-dictionary.m\".")
 
 (defconst osx-dictionary-buffer-name "*osx-dictionary*")
 
@@ -241,39 +240,6 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
                nil nil
                (osx-dictionary--region-or-word)))
 
-(defun osx-dictionary--chinese-word-prediction (current-word current-offset)
-  "Predicate Chinese word from CURRENT-WORD from CURRENT-OFFSET."
-  (let ((a 0) (b 0))
-    (dolist (word (split-string (shell-command-to-string
-                                 (format osx-dictionary-chinese-wordsplit-command
-                                         current-word))))
-      (cl-incf b (length word))
-      (if (<= a current-offset b)
-          (cl-return word)
-        (setq a b)))))
-
-(defun osx-dictionary--offset-in-current-word ()
-  "Get offset in current word."
-  (let* ((boundary (bounds-of-thing-at-point 'word))
-         (beginning-pos (car boundary))
-         (end-pos (cdr boundary))
-         (current-pos (point)))
-    (if (= current-pos end-pos)
-        (- end-pos beginning-pos)
-      (1+ (- current-pos beginning-pos)))))
-
-(defun osx-dictionary--word-at-point ()
-  "Get English or Chinese word at point."
-  (let ((case-fold-search t)
-        (current-word (thing-at-point 'word t)))
-    (if (or (string-match-p "\\`[a-z]*\\'" current-word)
-            (zerop (length osx-dictionary-chinese-wordsplit-command)))
-        ;; English word or do not use jieba (结巴中文分词)
-        current-word
-      ;; Chinese word
-      (osx-dictionary--chinese-word-prediction
-       current-word (osx-dictionary--offset-in-current-word)))))
-
 (defun osx-dictionary--region-or-word ()
   "Return region or word around point.
 If `mark-active' on, return region string.
@@ -281,13 +247,9 @@ Otherwise return word around point."
   (if mark-active
       (buffer-substring-no-properties (region-beginning)
                                       (region-end))
-    (osx-dictionary--word-at-point)))
-
-;;;###autoload
-(defun osx-dictionary-bug-report ()
-  "File a bug report about the `osx-dictionary' package."
-  (interactive)
-  (browse-url "https://github.com/xuchunyang/osx-dictionary.el/issues"))
+    (if osx-dictionary-use-chinese-text-segmentation
+        (thing-at-point 'chinese-or-other-word t)
+      (thing-at-point 'word t))))
 
 (provide 'osx-dictionary)
 ;;; osx-dictionary.el ends here
