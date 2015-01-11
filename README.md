@@ -41,9 +41,15 @@ for more info.
 
 Below is my configuration for this package:
 ```elisp
-(setq osx-dictionary-use-chinese-text-segmentation t) ; Support Chinese word
+;; Support Chinese word
+(setq osx-dictionary-use-chinese-text-segmentation t)
+
+;; Key bindings
 (global-set-key (kbd "C-c d") 'osx-dictionary-search-pointer)
 ;; (global-set-key (kbd "C-c i") 'osx-dictionary-search-input)
+
+;; Work with popwin-el (https://github.com/m2ym/popwin-el)
+;; (push "*osx-dictionary*" popwin:special-display-config)
 ```
 
 Here is a screenshot of a sample usage:
