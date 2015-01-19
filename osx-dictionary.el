@@ -205,34 +205,38 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
   "Search input word and display result with buffer."
   (interactive)
   (let ((word (osx-dictionary--prompt-input)))
-    (with-current-buffer (get-buffer-create osx-dictionary-buffer-name)
-      (setq buffer-read-only nil)
-      (erase-buffer)
-      (let ((progress-reporter
-             (make-progress-reporter (format "Searching (%s)..." word)
-                                     nil nil)))
-        (insert (osx-dictionary--search word))
-        (progress-reporter-done progress-reporter))
-      (osx-dictionary--goto-dictionary)
-      (goto-char (point-min))
-      (setq buffer-read-only t))))
+    (if word
+        (with-current-buffer (get-buffer-create osx-dictionary-buffer-name)
+          (setq buffer-read-only nil)
+          (erase-buffer)
+          (let ((progress-reporter
+                 (make-progress-reporter (format "Searching (%s)..." word)
+                                         nil nil)))
+            (insert (osx-dictionary--search word))
+            (progress-reporter-done progress-reporter))
+          (osx-dictionary--goto-dictionary)
+          (goto-char (point-min))
+          (setq buffer-read-only t))
+      (message "Nothing to look up"))))
 
 ;;;###autoload
 (defun osx-dictionary-search-pointer ()
   "Search word around and display result with buffer."
   (interactive)
   (let ((word (osx-dictionary--region-or-word)))
-    (with-current-buffer (get-buffer-create osx-dictionary-buffer-name)
-      (setq buffer-read-only nil)
-      (erase-buffer)
-      (let ((progress-reporter
-             (make-progress-reporter (format "Searching (%s)..." word)
-                                     nil nil)))
-        (insert (osx-dictionary--search word))
-        (progress-reporter-done progress-reporter))
-      (osx-dictionary--goto-dictionary)
-      (goto-char (point-min))
-      (setq buffer-read-only t))))
+    (if word
+        (with-current-buffer (get-buffer-create osx-dictionary-buffer-name)
+          (setq buffer-read-only nil)
+          (erase-buffer)
+          (let ((progress-reporter
+                 (make-progress-reporter (format "Searching (%s)..." word)
+                                         nil nil)))
+            (insert (osx-dictionary--search word))
+            (progress-reporter-done progress-reporter))
+          (osx-dictionary--goto-dictionary)
+          (goto-char (point-min))
+          (setq buffer-read-only t))
+      (message "Nothing to look up"))))
 
 (defun osx-dictionary--prompt-input ()
   "Prompt input object for translate."
