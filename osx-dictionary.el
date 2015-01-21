@@ -188,7 +188,7 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
 
 (defun osx-dictionary--search (word)
   "Search WORD."
-  (if (symbol-value 'osx-dictionary-search-log-file) 
+  (if (symbol-value 'osx-dictionary-search-log-file)
       (append-to-file
        (concat word "\n") nil
        (symbol-value 'osx-dictionary-search-log-file)))
@@ -196,9 +196,7 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
          (concat
           (osx-dictionary-cli-find-or-recompile)
           " lookup "
-          (if (symbol-value 'osx-dictionary-dictionary-choice)
-              (symbol-value 'osx-dictionary-dictionary-choice)
-            "")
+          (or (symbol-value 'osx-dictionary-dictionary-choice) "")
           " "
           (shell-quote-argument word))))
     (progn

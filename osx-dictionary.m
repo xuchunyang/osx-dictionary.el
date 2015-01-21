@@ -90,7 +90,7 @@ NSString* suggest(char* w) {
 }
 
 int main(int argc, char *argv[]) {
-  
+
   NSString* result;
   char* rawInput;
   int arglen;
@@ -108,13 +108,12 @@ int main(int argc, char *argv[]) {
       return 0;
     } else {
       for (NSObject *d in s_dicts) {
-        NSString *sn = (__bridge NSString*)DCSDictionaryGetShortName((__bridge DCSDictionaryRef)d);        
+        NSString *sn = (__bridge NSString*)DCSDictionaryGetShortName((__bridge DCSDictionaryRef)d);
         [s_names setValue:d forKey:sn];
-        //[s_names setValue:sn forKey:[NSString stringWithFormat:@"%p",d]];
       }
     }
   }
-  
+
   if ([command isEqualToString:@"lookup"]) {
     if (argc == 4) {
       rawInput = argv[3];
@@ -133,11 +132,8 @@ int main(int argc, char *argv[]) {
       NSString* subStr = [inputStr substringWithRange:NSMakeRange(substringRange.location, substringRange.length)];
       NSArray* records = (NSArray*)DCSCopyRecordsForSearchString((__bridge DCSDictionaryRef)d, (__bridge CFStringRef)subStr, 0, 0);
       NSString* defStr = @"";
-      if (records) {      
-        /*defStr = [defStr stringByAppendingString:
-          [NSString stringWithFormat:@"[%@]\n", [s_names objectForKey:[NSString stringWithFormat:@"%p",d]]]];*/
+      if (records) {
         for (NSObject* r in records) {
-          // DCSRecordCopyData doesn't play with with the big boy dicts
           //CFStringRef data = DCSRecordGetTitle((__bridge CFTypeRef) r);
           CFStringRef data = DCSRecordGetRawHeadword((__bridge CFTypeRef) r);
           //CFStringRef data = DCSRecordGetHeadword((__bridge CFTypeRef) r);
@@ -145,7 +141,7 @@ int main(int argc, char *argv[]) {
             NSString* recordDef = (NSString*)DCSCopyTextDefinition((__bridge DCSDictionaryRef)d,
                                                                    data,
                                                                    CFRangeMake(0,CFStringGetLength(data)));
-            defStr = [defStr stringByAppendingString:[NSString stringWithFormat:@"%@\n\n", recordDef]];                       
+            defStr = [defStr stringByAppendingString:[NSString stringWithFormat:@"%@\n\n", recordDef]];
           }
         }
       }
@@ -157,17 +153,6 @@ int main(int argc, char *argv[]) {
       result = dictionary(rawInput);
     }
   }
-
-  /*
-
-  // send to dict look up
-
-  for (NSObject *d in s_dicts) {
-    CFRange substringRange = DCSGetTermRangeInString((__bridge DCSDictionaryRef)d, (__bridge CFStringRef)inputStr, 0);
-
-    
-
-    }*/
 
   if (result == nil) {
     int i, l;
