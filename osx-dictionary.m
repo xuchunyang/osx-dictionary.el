@@ -16,6 +16,34 @@
 #define tolower(x)\
   (('A' <= x && x <= 'Z') ? ((x) - ('A' - 'a')) : (x))
 
+
+
+static NSArray* s_dicts;
+static NSDictionary* s_names;
+
+// Obtain undocumented dictionary service API calls --- thanks to https://github.com/mchinen/RSDeskDict for the research.
+CFArrayRef DCSCopyAvailableDictionaries();
+CFStringRef DCSDictionaryGetShortName(DCSDictionaryRef);
+DCSDictionaryRef DCSDictionaryCreate(CFURLRef url);
+CFArrayRef DCSCopyRecordsForSearchString(DCSDictionaryRef dictionary, CFStringRef string, void *u1, void *u2);
+CFStringRef DCSRecordCopyData(CFTypeRef record);
+CFStringRef DCSDictionaryGetName(DCSDictionaryRef dictionary);
+CFStringRef DCSRecordGetRawHeadword(CFTypeRef record);
+CFStringRef DCSRecordGetString(CFTypeRef record);
+
+CFStringRef DCSRecordGetAssociatedObj(CFTypeRef record);
+CFStringRef DCSRecordCopyDataURL(CFTypeRef record);
+CFStringRef DCSRecordGetAnchor(CFTypeRef record);
+CFStringRef DCSRecordGetSubDictionary(CFTypeRef record);
+CFStringRef DCSRecordGetTitle(CFTypeRef record);
+CFDictionaryRef DCSCopyDefinitionMarkup (
+                                         DCSDictionaryRef dictionary,
+                                         CFStringRef record
+                                         );
+
+extern CFStringRef DCSRecordGetHeadword(CFTypeRef);
+extern CFStringRef DCSRecordGetBody(CFTypeRef);
+
 NSString* dictionary(char* searchword) {
   NSString* word = [NSString stringWithUTF8String:searchword];
   return (NSString*)DCSCopyTextDefinition(NULL, (CFStringRef)word,
@@ -62,19 +90,95 @@ NSString* suggest(char* w) {
 }
 
 int main(int argc, char *argv[]) {
-  int arglen = strlen(argv[1]);
-  if (argc < 2 || arglen == 0) return 0;
-  NSString* result = dictionary(argv[1]);
+  
+  NSString* result;
+  char* rawInput;
+  int arglen;
+  if (argc < 2) return 0;
+  NSString *command = @(argv[1]);
+
+  if ([command isEqualToString:@"dicts"] || argc == 4) {
+    s_dicts = (NSArray*)DCSCopyAvailableDictionaries();
+    s_names = [NSMutableDictionary dictionaryWithCapacity:[s_dicts count]];
+
+    if ([command isEqualToString:@"dicts"]) {
+      for (NSObject *d in s_dicts) {
+        NSLog(@"%@", (__bridge NSString*)DCSDictionaryGetShortName((__bridge DCSDictionaryRef)d));
+      }
+      return 0;
+    } else {
+      for (NSObject *d in s_dicts) {
+        NSString *sn = (__bridge NSString*)DCSDictionaryGetShortName((__bridge DCSDictionaryRef)d);        
+        [s_names setValue:d forKey:sn];
+        //[s_names setValue:sn forKey:[NSString stringWithFormat:@"%p",d]];
+      }
+    }
+  }
+  
+  if ([command isEqualToString:@"lookup"]) {
+    if (argc == 4) {
+      rawInput = argv[3];
+      NSString *dictionaryName = @(argv[2]);
+      NSString *inputStr = @(rawInput);
+      arglen = strlen(rawInput);
+      if (arglen == 0) return 0;
+
+      NSObject *d = [s_names objectForKey:dictionaryName];
+      if (!d) {
+        NSLog(@"Dictionary not found.");
+        return 0;
+      }
+      CFRange substringRange = DCSGetTermRangeInString((__bridge DCSDictionaryRef)d, (__bridge CFStringRef)inputStr, 0);
+      if (substringRange.location == kCFNotFound) { return 0; }
+      NSString* subStr = [inputStr substringWithRange:NSMakeRange(substringRange.location, substringRange.length)];
+      NSArray* records = (NSArray*)DCSCopyRecordsForSearchString((__bridge DCSDictionaryRef)d, (__bridge CFStringRef)subStr, 0, 0);
+      NSString* defStr = @"";
+      if (records) {      
+        /*defStr = [defStr stringByAppendingString:
+          [NSString stringWithFormat:@"[%@]\n", [s_names objectForKey:[NSString stringWithFormat:@"%p",d]]]];*/
+        for (NSObject* r in records) {
+          // DCSRecordCopyData doesn't play with with the big boy dicts
+          //CFStringRef data = DCSRecordGetTitle((__bridge CFTypeRef) r);
+          CFStringRef data = DCSRecordGetRawHeadword((__bridge CFTypeRef) r);
+          //CFStringRef data = DCSRecordGetHeadword((__bridge CFTypeRef) r);
+          if (data) {
+            NSString* recordDef = (NSString*)DCSCopyTextDefinition((__bridge DCSDictionaryRef)d,
+                                                                   data,
+                                                                   CFRangeMake(0,CFStringGetLength(data)));
+            defStr = [defStr stringByAppendingString:[NSString stringWithFormat:@"%@\n\n", recordDef]];                       
+          }
+        }
+      }
+      result = defStr;
+    } else {
+      rawInput = argv[2];
+      arglen = strlen(rawInput);
+      if (arglen == 0) return 0;
+      result = dictionary(rawInput);
+    }
+  }
+
+  /*
+
+  // send to dict look up
+
+  for (NSObject *d in s_dicts) {
+    CFRange substringRange = DCSGetTermRangeInString((__bridge DCSDictionaryRef)d, (__bridge CFStringRef)inputStr, 0);
+
+    
+
+    }*/
+
   if (result == nil) {
     int i, l;
-    if ((l = strlen(argv[1])) > 100) return 0;
+    if ((l = strlen(rawInput)) > 100) return 0;
     for (i = 0; i < l; ++i)
-      if (!isalpha(argv[1][i])) return 0;
-    if ((result = suggest(argv[1])) == nil) {
+      if (!isalpha(rawInput[i])) return 0;
+    if ((result = suggest(rawInput)) == nil) {
       if (l < 3) return 0;
       int j; char s[l * 3 + 2]; s[0] = '^';
       for (i = j = 0; i < l; ++i) {
-        s[++j] = argv[1][i]; s[++j] = '.'; s[++j] = '*';
+        s[++j] = rawInput[i]; s[++j] = '.'; s[++j] = '*';
       }
       s[++j] = '\0';
       if ((result = suggest(s)) == nil) return 0;
@@ -102,7 +206,7 @@ int main(int argc, char *argv[]) {
   if (arglen + 9 < len) {
     char flg = 1;
     for (i = 0; i < arglen; ++i) {
-      if (tolower(r[i]) != tolower(argv[1][i])) {
+      if (tolower(r[i]) != tolower(rawInput[i])) {
         flg = 0; break;
       }
     }
@@ -244,4 +348,3 @@ int main(int argc, char *argv[]) {
   printf("%s", s);
   return 0;
 }
-

@@ -119,6 +119,12 @@ for more info."
 (defvar osx-dictionary-previous-window-configuration nil
   "Window configuration before switching to dictionary buffer.")
 
+(defvar osx-dictionary-search-log-file nil
+  "The file to which search log should be appended. If nil no logging is done.")
+
+(defvar osx-dictionary-dictionary-choice nil
+  "The specific dictionary that should be searched. If nil automatic dictionary is used.")
+
 (define-derived-mode osx-dictionary-mode fundamental-mode "osx-dictionary"
   "Major mode to look up word through dictionary.
 \\{dictionary-mode-map}.
@@ -182,9 +188,29 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
 
 (defun osx-dictionary--search (word)
   "Search WORD."
+  (if (symbol-value 'osx-dictionary-search-log-file) 
+      (append-to-file
+       (concat word "\n") nil
+       (symbol-value 'osx-dictionary-search-log-file)))
+  (let ((search-string
+         (concat
+          (osx-dictionary-cli-find-or-recompile)
+          " lookup "
+          (if (symbol-value 'osx-dictionary-dictionary-choice)
+              (symbol-value 'osx-dictionary-dictionary-choice)
+            "")
+          " "
+          (shell-quote-argument word))))
+    (progn
+      (message word)
+      (message search-string)
+      (shell-command-to-string search-string))))
+
+(defun osx-dictionary--list-dictionaries (word)
+  "List the installed dictionaries."
   (shell-command-to-string
    (concat
-    (osx-dictionary-cli-find-or-recompile) " " (shell-quote-argument word))))
+    (osx-dictionary-cli-find-or-recompile) " dicts")))
 
 (defun osx-dictionary-recompile ()
   "Create or replace the `osx-dictionary-cli' executable using the latest code."
@@ -231,6 +257,7 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
           (let ((progress-reporter
                  (make-progress-reporter (format "Searching (%s)..." word)
                                          nil nil)))
+            (message word)
             (insert (osx-dictionary--search word))
             (progress-reporter-done progress-reporter))
           (osx-dictionary--goto-dictionary)
