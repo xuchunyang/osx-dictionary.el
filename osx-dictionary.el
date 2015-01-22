@@ -123,7 +123,11 @@ for more info."
   "The file to which search log should be appended. If nil no logging is done.")
 
 (defvar osx-dictionary-dictionary-choice nil
-  "The specific dictionary that should be searched. If nil automatic dictionary is used.")
+  "The specific dictionary that should be searched.
+
+If nil automatic dictionary is used.
+
+Run '`osx-dictionary-cli' -l' from shell to list all available dictionaries.")
 
 (define-derived-mode osx-dictionary-mode fundamental-mode "osx-dictionary"
   "Major mode to look up word through dictionary.
@@ -196,7 +200,7 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
          (concat
           (osx-dictionary-cli-find-or-recompile)
           (when (symbol-value 'osx-dictionary-dictionary-choice)
-            (concat "-u " (symbol-value 'osx-dictionary-dictionary-choice)))
+            (concat " -u " (symbol-value 'osx-dictionary-dictionary-choice)))
           " "
           (shell-quote-argument word))))
     (shell-command-to-string search-string)))
