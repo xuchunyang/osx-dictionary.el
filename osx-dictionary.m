@@ -119,7 +119,6 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "definition of '%s' not found\n", word);
       return -1;
     } else {
-      printf("dict=%s, word=%s\n", dict_name, word);
       result = defStr;
     }
   } else if (word) {            // Use Default Dictionary
