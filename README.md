@@ -39,10 +39,14 @@ to
 [chinese-word-at-point](https://github.com/xuchunyang/chinese-word-at-point.el)
 for more info.
 
-Below is my configuration for this package:
+Below is a sample configuration for this package:
 ```elisp
 ;; Support Chinese word
-(setq osx-dictionary-use-chinese-text-segmentation t)
+;; (setq osx-dictionary-use-chinese-text-segmentation t)
+
+;; Choose explicitly a dictionary for searching (use the first available
+;; dictionary in Dictionary.app if not set)
+;; (setq osx-dictionary-dictionary-choice "Apple")
 
 ;; Key bindings
 (global-set-key (kbd "C-c d") 'osx-dictionary-search-pointer)
@@ -56,7 +60,7 @@ Here is a screenshot of a sample usage:
 ![Imgur](http://i.imgur.com/BBg8ZHR.png)
 
 ## Todo
-- [ ] Save search history
+- [x] Save search history
 - [ ] Improve regex for highlight
   - [ ] Add more keywords, for example, "名" and "代"
   - [ ] Adopt more precise matching
