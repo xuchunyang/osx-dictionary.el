@@ -1,7 +1,11 @@
+// Filename: osx-dictionary.m
+// Program: Access Mac OS X Dictionary.app from Command Line
 // Authors: Charles Francis <agentcoops@gmail.com>
 //          Chunyang Xu <xuchunyang56@gmail.com>
 // Inspired by: dictionary.m from dictionary.vim (https://github.com/itchyny/dictionary.vim)
-// Last Change: Thu Jan 22 21:06:42 2015
+// Compile: clang -framework CoreServices -framework Foundation osx-dictionary.m -o osx-dictionary-cli
+// Usage: osx-dictionary-cli -h
+// Last Change: Thu Jan 22 2015
 
 #import <Foundation/Foundation.h>
 #import <CoreServices/CoreServices.h>
