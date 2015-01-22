@@ -72,7 +72,11 @@ int main(int argc, char *argv[]) {
     }
 
   word = argv[optind];
-  word_len = strlen(word);
+  if (word == NULL || (word_len = strlen(word)) == 0) {
+    usage();
+    return -1;
+  }
+
   if (dict_name && word) {
     NSString *dictionaryName = @(dict_name);
     NSString *ns_word = @(word);
