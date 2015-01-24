@@ -132,6 +132,10 @@ int main(int argc, char *argv[]) {
   } else if (word) {            // Use Default Dictionary
     NSString* ns_word = [NSString stringWithUTF8String:word];
     result = (NSString*)DCSCopyTextDefinition(NULL, (CFStringRef)ns_word, CFRangeMake(0,[ns_word length]));
+    if (result == nil) {
+      fprintf(stderr, "definition of '%s' not found\n", word);
+      return -1;
+    }
   } else {
     usage();
     return -1;

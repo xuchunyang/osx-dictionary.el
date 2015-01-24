@@ -61,7 +61,7 @@ for more info."
   :group 'osx-dictionary
   :type 'boolean)
 
-(defconst osx-dictionary-cli "osx-dictionary"
+(defconst osx-dictionary-cli "osx-dictionary-cli"
   "The name of executable file compiled from \"osx-dictionary.m\".")
 
 (defconst osx-dictionary-buffer-name "*osx-dictionary*")
