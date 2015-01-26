@@ -10,6 +10,8 @@
 #import <Foundation/Foundation.h>
 #import <CoreServices/CoreServices.h>
 
+#include <getopt.h> // getopt_long
+
 // No timestamp and program name
 #define NSLog(FORMAT, ...) printf("%s\n", \
                                   [[NSString stringWithFormat:FORMAT, ##__VA_ARGS__] UTF8String]);
@@ -40,10 +42,16 @@ void usage() {
   printf("Usage:\n\
   osx-dictionary-cli: [-h] [-l]\n\
                       [-u dictionary] word\n\
-Options:\n\
-  -h                Show this help message and exit\n\
-  -l                Display list of available dictionaries and exit\n\
-  -u                Use only special dictionary, otherwise use default dictionary\n");
+\n\
+Mac OS X Dictionary.app Console Version\n\
+\n\
+positional argument:\n\
+  word                        word to lookup\n\
+\n\
+optional arguments:\n\
+  -h, --help                  Show this help message and exit\n\
+  -l, --list-dicts            Display list of available dictionaries and exit\n\
+  -u, --user-dict=dictionary  Use only special dictionary, otherwise use default dictionary\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -53,10 +61,16 @@ int main(int argc, char *argv[]) {
   NSArray *dicts;
   NSDictionary *s_names;
   NSString *result;
-  int c;
 
-  opterr = 0;
-  while ((c = getopt(argc, argv, "hlu:")) != -1)
+  struct option long_options[] = {
+    {"help", no_argument, 0, 'h'},
+    {"list-dicts", no_argument, 0, 'l'},
+    {"use-dict", required_argument, 0, 'u'},
+    {0, 0, 0, 0}
+  };
+  int option_index = 0;
+  int c;
+  while ((c = getopt_long(argc, argv, "hlu:", long_options, &option_index)) != -1)
     switch (c) {
     case 'h':
       usage();
