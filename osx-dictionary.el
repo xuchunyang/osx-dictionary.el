@@ -71,11 +71,14 @@ for more info."
 
 (defvar osx-dictionary-mode-header-line
   '(
-    (:propertize "i" face mode-line-buffer-id)
+    (:propertize "s" face mode-line-buffer-id)
     ": Search Word"
     "    "
     (:propertize "o" face mode-line-buffer-id)
     ": Open in Dictionary.app"
+    "    "
+    (:propertize "r" face mode-line-buffer-id)
+    ": Read word"
     "    "
     (:propertize "q" face mode-line-buffer-id)
     ": Quit")
@@ -93,20 +96,12 @@ for more info."
 
 (defvar osx-dictionary-mode-map
   (let ((map (make-sparse-keymap)))
-    ;; Dictionary command
+    ;; Dictionary commands
     (define-key map "q" 'osx-dictionary-quit)
-    (define-key map "i" 'osx-dictionary-search-input)
+    (define-key map "s" 'osx-dictionary-search-input)
     (define-key map "o" 'osx-dictionary-open-dictionary.app)
-    ;; Isearch
-    (define-key map "S" 'isearch-forward-regexp)
-    (define-key map "R" 'isearch-backward-regexp)
-    (define-key map "s" 'isearch-forward)
-    (define-key map "r" 'isearch-backward)
-    ;; Misc.
-    (define-key map "DEL" 'scroll-down)
-    (define-key map " " 'scroll-up)
-    (define-key map "l" 'forward-char)
-    (define-key map "h" 'backward-char)
+    (define-key map "r" 'osx-dictionary-read-word)
+    ;; Misc
     (define-key map "?" 'describe-mode)
     map)
   "Keymap for `osx-dictionary-mode'.")
@@ -139,6 +134,13 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
   (save-excursion
     (goto-char (point-min))
     (shell-command (format "open dict://%s" (thing-at-point 'word t)))))
+
+(defun osx-dictionary-read-word ()
+  "Open current searched `word' in Dictionary.app."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (shell-command (concat "say " (shell-quote-argument (thing-at-point 'word t))))))
 
 (defun osx-dictionary-quit ()
   "Quit osx-dictionary: reselect previously selected buffer."
