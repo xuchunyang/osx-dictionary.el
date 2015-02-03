@@ -180,7 +180,9 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
          (concat
           (osx-dictionary-cli-find-or-recompile)
           (when (symbol-value 'osx-dictionary-dictionary-choice)
-            (concat " -u " (symbol-value 'osx-dictionary-dictionary-choice)))
+            (concat " -u "
+                    (shell-quote-argument
+                     (symbol-value 'osx-dictionary-dictionary-choice))))
           " "
           (shell-quote-argument word))))
     (shell-command-to-string search-string)))
