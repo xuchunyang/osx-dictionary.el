@@ -3,6 +3,7 @@
 ;; Copyright (C) 2014-2015 by Chunyang Xu
 
 ;; Author: Chunyang Xu <xuchunyang56@gmail.com>
+;; Maintainer: Chunyang Xu <xuchunyang56@gmail.com>
 ;; URL: https://github.com/xuchunyang/osx-dictionary.el
 ;; Package-Requires: ((cl-lib "0.5") (chinese-word-at-point "0.1"))
 ;; Version: 0.1
@@ -50,7 +51,7 @@
 
 (defgroup osx-dictionary nil
   "Mac OS X Dictionary.app interface for Emacs"
-  :group 'leim)
+  :group 'emacs)
 
 (defcustom osx-dictionary-use-chinese-text-segmentation nil
   "Set to t to enable Chinese text segmentation.
@@ -60,6 +61,20 @@ URL `https://github.com/xuchunyang/chinese-word-at-point.el'
 for more info."
   :group 'osx-dictionary
   :type 'boolean)
+
+(defcustom osx-dictionary-search-log-file nil
+  "File for saving searching history."
+  :type '(choice (const nil) string)
+  :group 'osx-dictionary)
+
+(defcustom osx-dictionary-dictionary-choice nil
+  "The specific dictionary that should be used.
+
+If nil automatic dictionary is used.
+
+Run '`osx-dictionary-cli' -l' from shell to list all available dictionaries."
+  :type '(choice (const nil) string)
+  :group 'osx-dictionary)
 
 (defconst osx-dictionary-cli "osx-dictionary-cli"
   "The name of executable file compiled from \"osx-dictionary.m\".")
@@ -108,16 +123,6 @@ for more info."
 
 (defvar osx-dictionary-previous-window-configuration nil
   "Window configuration before switching to dictionary buffer.")
-
-(defvar osx-dictionary-search-log-file nil
-  "The file to which search log should be appended. If nil no logging is done.")
-
-(defvar osx-dictionary-dictionary-choice nil
-  "The specific dictionary that should be searched.
-
-If nil automatic dictionary is used.
-
-Run '`osx-dictionary-cli' -l' from shell to list all available dictionaries.")
 
 (define-derived-mode osx-dictionary-mode fundamental-mode "osx-dictionary"
   "Major mode to look up word through dictionary.
