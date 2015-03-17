@@ -1,6 +1,7 @@
 # OSX *Dictionary.app* interface for Emacs
 ---
 [![MELPA](http://melpa.org/packages/osx-dictionary-badge.svg)](http://melpa.org/#/osx-dictionary)
+[![MELPA](http://stable.melpa.org/packages/osx-dictionary-badge.svg)](http://stable.melpa.org/#/osx-dictionary)
 
 ## Introduction
 
