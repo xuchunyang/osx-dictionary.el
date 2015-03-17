@@ -1,4 +1,4 @@
-;;; osx-dictionary.el --- Interface for OSX Dictionary.app  -*- coding: utf-8-unix; -*-
+;;; osx-dictionary.el --- Interface for OSX Dictionary.app
 
 ;; Copyright (C) 2014-2015 by Chunyang Xu
 
@@ -6,7 +6,7 @@
 ;; Maintainer: Chunyang Xu <xuchunyang56@gmail.com>
 ;; URL: https://github.com/xuchunyang/osx-dictionary.el
 ;; Package-Requires: ((cl-lib "0.5") (chinese-word-at-point "0.1"))
-;; Version: 0.1
+;; Version: 0.2
 ;; keywords: dictionary
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -33,11 +33,6 @@
 ;; Search input word and display result with buffer
 ;; `osx-dictionary-search-pointer'
 ;; Search word around and display result with buffer
-;;
-;; Tips:
-;;
-;; If current mark is active, osx-dictionary commands will translate
-;; region string, otherwise translate word around point.
 ;;
 
 ;;; Installation:
@@ -260,4 +255,9 @@ Otherwise return word around point."
       (thing-at-point 'word t))))
 
 (provide 'osx-dictionary)
+
 ;;; osx-dictionary.el ends here
+
+;; Local Variables:
+;; coding: utf-8
+;; End:
