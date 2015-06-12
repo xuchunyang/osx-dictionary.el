@@ -7,7 +7,7 @@
 ;; URL: https://github.com/xuchunyang/osx-dictionary.el
 ;; Package-Requires: ((cl-lib "0.5") (chinese-word-at-point "0.1"))
 ;; Version: 0.2
-;; keywords: dictionary
+;; keywords: mac, dictionary
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -37,7 +37,7 @@
 
 ;;; Installation:
 ;;
-;; `This package is available on Melpa.
+;; This package is available on Melpa.
 ;;
 
 ;;; Code:
@@ -227,7 +227,10 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
 (defun osx-dictionary-search-input ()
   "Search input word and display result with buffer."
   (interactive)
-  (let ((word (osx-dictionary--prompt-input)))
+  (let* ((default (osx-dictionary--region-or-word))
+         (prompt  (if default (format "Word (%S): " default)
+                    "Word: "))
+         (word (read-string prompt nil nil default)))
     (osx-dictionary--view-result word)))
 
 ;;;###autoload
@@ -237,17 +240,11 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
   (let ((word (osx-dictionary--region-or-word)))
     (osx-dictionary--view-result word)))
 
-(defun osx-dictionary--prompt-input ()
-  "Prompt input object for translate."
-  (read-string (format "Word (%s): " (or (osx-dictionary--region-or-word) ""))
-               nil nil
-               (osx-dictionary--region-or-word)))
-
 (defun osx-dictionary--region-or-word ()
   "Return region or word around point.
 If `mark-active' on, return region string.
 Otherwise return word around point."
-  (if mark-active
+  (if (use-region-p)
       (buffer-substring-no-properties (region-beginning)
                                       (region-end))
     (if osx-dictionary-use-chinese-text-segmentation
