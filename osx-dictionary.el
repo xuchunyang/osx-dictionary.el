@@ -6,7 +6,7 @@
 ;; Maintainer: Chunyang Xu <xuchunyang56@gmail.com>
 ;; URL: https://github.com/xuchunyang/osx-dictionary.el
 ;; Package-Requires: ((cl-lib "0.5") (chinese-word-at-point "0.1"))
-;; Version: 0.2
+;; Version: 0.2.1
 ;; keywords: mac, dictionary
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -133,14 +133,14 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
   (interactive)
   (save-excursion
     (goto-char (point-min))
-    (shell-command (format "open dict://%s" (thing-at-point 'word t)))))
+    (shell-command (format "open dict://%s" (thing-at-point 'word)))))
 
 (defun osx-dictionary-read-word ()
   "Open current searched `word' in Dictionary.app."
   (interactive)
   (save-excursion
     (goto-char (point-min))
-    (shell-command (concat "say " (shell-quote-argument (thing-at-point 'word t))))))
+    (shell-command (concat "say " (shell-quote-argument (thing-at-point 'word))))))
 
 (defun osx-dictionary-quit ()
   "Quit osx-dictionary: reselect previously selected buffer."
@@ -248,8 +248,8 @@ Otherwise return word around point."
       (buffer-substring-no-properties (region-beginning)
                                       (region-end))
     (if osx-dictionary-use-chinese-text-segmentation
-        (thing-at-point 'chinese-or-other-word t)
-      (thing-at-point 'word t))))
+        (substring-no-properties (thing-at-point 'chinese-or-other-word))
+      (substring-no-properties (thing-at-point 'word)))))
 
 (provide 'osx-dictionary)
 
