@@ -6,7 +6,7 @@
 ;; Maintainer: Chunyang Xu <xuchunyang56@gmail.com>
 ;; URL: https://github.com/xuchunyang/osx-dictionary.el
 ;; Package-Requires: ((cl-lib "0.5") (chinese-word-at-point "0.1"))
-;; Version: 0.2.1
+;; Version: 0.2.2
 ;; keywords: mac, dictionary
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -248,8 +248,8 @@ Otherwise return word around point."
       (buffer-substring-no-properties (region-beginning)
                                       (region-end))
     (if osx-dictionary-use-chinese-text-segmentation
-        (substring-no-properties (thing-at-point 'chinese-or-other-word))
-      (substring-no-properties (thing-at-point 'word)))))
+        (thing-at-point 'chinese-or-other-word)
+      (thing-at-point 'word))))
 
 (provide 'osx-dictionary)
 
