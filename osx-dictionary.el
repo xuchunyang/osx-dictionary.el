@@ -58,7 +58,8 @@ for more info."
 
 (defcustom osx-dictionary-search-log-file nil
   "File for saving searching history."
-  :type '(choice (const nil) string)
+  :type '(choice (const :tag "Don't write search history to file" nil)
+                 (string :tag "Name of log file"))
   :group 'osx-dictionary)
 
 (defcustom osx-dictionary-dictionary-choice nil
@@ -70,7 +71,9 @@ names (i.e., string of a list of strings).
 
 In shell, run '`osx-dictionary-cli' -l' under this package's
 installation directory to list all available dictionaries."
-  :type '(choice (const nil) string)
+  :type '(choice (const :tag "Use the first available dictionary in Dictionary.app" nil)
+                 (string :tag "Dictionary")
+                 (repeat :tag "List of dictionaries" string))
   :group 'osx-dictionary)
 
 (defcustom osx-dictionary-separator "--------------------\n"
