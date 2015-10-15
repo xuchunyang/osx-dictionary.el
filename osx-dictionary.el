@@ -53,8 +53,8 @@
 A external Chinese text segmentation tool is required, refer to
 URL `https://github.com/xuchunyang/chinese-word-at-point.el'
 for more info."
-  :group 'osx-dictionary
-  :type 'boolean)
+  :type 'boolean
+  :group 'osx-dictionary)
 
 (defcustom osx-dictionary-search-log-file nil
   "File for saving searching history."
@@ -62,12 +62,20 @@ for more info."
   :group 'osx-dictionary)
 
 (defcustom osx-dictionary-dictionary-choice nil
-  "The specific dictionary that should be used.
+  "The specific dictionaries that should be used.
 
-If nil automatic dictionary is used.
+If nil, use the first available dictionary in Dictionary.app.
+If non-nil, it should be a dictionary name or a list of dictionary
+names (i.e., string of a list of strings).
 
-Run '`osx-dictionary-cli' -l' from shell to list all available dictionaries."
+In shell, run '`osx-dictionary-cli' -l' under this package's
+installation directory to list all available dictionaries."
   :type '(choice (const nil) string)
+  :group 'osx-dictionary)
+
+(defcustom osx-dictionary-separator "--------------------\n"
+  "Definitions separator."
+  :type 'string
   :group 'osx-dictionary)
 
 (defconst osx-dictionary-cli "osx-dictionary-cli"
@@ -171,19 +179,31 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
 
 (defun osx-dictionary--search (word)
   "Search WORD."
+  ;; Save to history file
   (when osx-dictionary-search-log-file
     (append-to-file
      (concat word "\n") nil
      (expand-file-name osx-dictionary-search-log-file)))
-  (let ((search-string
-         (concat
-          (osx-dictionary-cli-find-or-recompile)
-          (when osx-dictionary-dictionary-choice
-            (concat " -u "
-                    osx-dictionary-dictionary-choice))
-          " "
-          (shell-quote-argument word))))
-    (shell-command-to-string search-string)))
+  ;; Search
+  (cond ((null osx-dictionary-dictionary-choice)
+         (shell-command-to-string
+          (format "%s %s"
+                  (osx-dictionary-cli-find-or-recompile)
+                  (shell-quote-argument word))))
+        ((stringp osx-dictionary-dictionary-choice)
+         (shell-command-to-string
+          (format "%s -u %s %s"
+                  (osx-dictionary-cli-find-or-recompile)
+                  (shell-quote-argument osx-dictionary-dictionary-choice)
+                  (shell-quote-argument word))))
+        ((listp osx-dictionary-dictionary-choice)
+         (mapconcat (lambda (dictionary)
+                      (shell-command-to-string
+                       (format "%s -u %s %s"
+                               (osx-dictionary-cli-find-or-recompile)
+                               (shell-quote-argument dictionary)
+                               (shell-quote-argument word))))
+                    osx-dictionary-dictionary-choice osx-dictionary-separator))))
 
 (defun osx-dictionary--list-dictionaries (word)
   "List the installed dictionaries."
