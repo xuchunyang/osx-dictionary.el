@@ -197,13 +197,23 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
                   (shell-quote-argument osx-dictionary-dictionary-choice)
                   (shell-quote-argument word))))
         ((listp osx-dictionary-dictionary-choice)
-         (mapconcat (lambda (dictionary)
-                      (shell-command-to-string
-                       (format "%s -u %s %s"
-                               (osx-dictionary-cli-find-or-recompile)
-                               (shell-quote-argument dictionary)
-                               (shell-quote-argument word))))
-                    osx-dictionary-dictionary-choice osx-dictionary-separator))))
+         (let ((outputs
+                (mapcar
+                 (lambda (dictionary)
+                   (let ((res
+                          (shell-command-to-string
+                           (format "%s -u %s %s"
+                                   (osx-dictionary-cli-find-or-recompile)
+                                   (shell-quote-argument dictionary)
+                                   (shell-quote-argument word)))))
+                     ;; Assuming that when a word is not fount in a dictionary
+                     ;; output contains "kCFNotFound"
+                     (unless (string-match "kCFNotFound" res)
+                       res)))
+                 osx-dictionary-dictionary-choice)))
+           (mapconcat #'identity
+                      (remove nil outputs)
+                      osx-dictionary-separator)))))
 
 (defun osx-dictionary--list-dictionaries (word)
   "List the installed dictionaries."
