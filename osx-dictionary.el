@@ -259,7 +259,7 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
   "Search input word and display result with buffer."
   (interactive)
   (let* ((default (osx-dictionary--region-or-word))
-         (prompt  (if default (format "Word (%S): " default)
+         (prompt  (if default (format "Word (%s): " default)
                     "Word: "))
          (word (read-string prompt nil nil default)))
     (osx-dictionary--view-result word)))
