@@ -86,8 +86,8 @@ installation directory to list all available dictionaries."
 
 (defconst osx-dictionary-buffer-name "*osx-dictionary*")
 
-(defconst osx-dictionary--load-dir (file-name-as-directory (file-name-directory
-                                                            load-file-name)))
+(defconst osx-dictionary--load-dir (file-name-directory
+                                    (or load-file-name buffer-file-name)))
 
 (defvar osx-dictionary-mode-header-line
   '(
