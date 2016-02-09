@@ -218,12 +218,6 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
                       (remove nil outputs)
                       osx-dictionary-separator)))))
 
-(defun osx-dictionary--list-dictionaries (word)
-  "List the installed dictionaries."
-  (shell-command-to-string
-   (concat
-    (osx-dictionary-cli-find-or-recompile) " dicts")))
-
 (defun osx-dictionary-recompile ()
   "Create or replace the `osx-dictionary-cli' executable using the latest code."
   (interactive)
@@ -233,6 +227,7 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
     (expand-file-name osx-dictionary-cli)))
 
 (defun osx-dictionary-cli-find-or-recompile ()
+  "Find the osx-dictionary-cli. If it does not exist, recompile it."
   (or
    (executable-find (expand-file-name osx-dictionary-cli osx-dictionary--load-dir))
    (executable-find osx-dictionary-cli)
@@ -271,6 +266,11 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
   (let ((word (osx-dictionary--region-or-word)))
     (osx-dictionary--view-result word)))
 
+;;;###autoload
+(defun osx-dictionary-get-all-dictionaries ()
+  "Get all dictionaries as a list."
+  (split-string (shell-command-to-string (format "%s -l" (osx-dictionary-cli-find-or-recompile))) "\n"))
+
 (defun osx-dictionary--region-or-word ()
   "Return region or word around point.
 If `mark-active' on, return region string.
@@ -281,7 +281,7 @@ Otherwise return word around point."
     (if osx-dictionary-use-chinese-text-segmentation
         (if (require 'chinese-word-at-point nil t)
             (thing-at-point 'chinese-or-other-word)
-          (user-error "chinese-word-at-point isn't installed"))
+          (user-error "The package chinese-word-at-point isn't installed"))
       (thing-at-point 'word))))
 
 (provide 'osx-dictionary)
