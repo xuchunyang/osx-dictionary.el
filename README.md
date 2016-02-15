@@ -27,6 +27,10 @@ Install from [MELPA](http://melpa.org) with:
 ;; Choose explicitly a dictionary for searching (use the first available
 ;; dictionary in Dictionary.app if not set)
 ;; (setq osx-dictionary-dictionary-choice "Apple")
+;; To search in more than one dictionaries
+;; (setq osx-dictionary-dictionary-choice (list "English" "Simplified Chinese" "Spanish"))
+;; To search in all dictionaries
+;; (setq osx-dictionary-dictionary-choice (osx-dictionary-get-all-dictionaries))
 
 ;; Key bindings
 (global-set-key (kbd "C-c d") 'osx-dictionary-search-pointer)
