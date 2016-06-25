@@ -104,14 +104,14 @@ installation directory to list all available dictionaries."
     ": Quit")
   "Header-line used on the `osx-dictionary-mode'.")
 
-(defvar osx-dictionary-mode-font-lock-Keywords
+(defvar osx-dictionary-mode-font-lock-keywords
   '(
     ;; Word class
-    ("noun\\|adjective\\|det\\|verb\\|adverb\\|abbreviation\\|preposition\\|suffix\\|prefix\\|conjunction\\|symb" . font-lock-type-face)
+    ("\\b\\(noun\\|adjective\\|det\\|verb\\|adverb\\|abbreviation\\|preposition\\|suffix\\|prefix\\|conjunction\\|symb\\)\\b" . font-lock-type-face)
     ;; Serial number
     ("^[0-9]+" . font-lock-builtin-face)
     ;; Dictionary comment
-    ("DERIVATIVES\\|ORIGIN\\|PHRASES" . font-lock-comment-face))
+    ("^\\(DERIVATIVES\\|ORIGIN\\|PHRASES\\)" . font-lock-comment-face))
   "Keywords to highlight in `osx-dictionary-mode'.")
 
 (defvar osx-dictionary-mode-map
@@ -135,7 +135,7 @@ installation directory to list all available dictionaries."
 Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
 
   (setq header-line-format osx-dictionary-mode-header-line)
-  (setq font-lock-defaults '(osx-dictionary-mode-font-lock-Keywords))
+  (setq font-lock-defaults '(osx-dictionary-mode-font-lock-keywords))
   (setq buffer-read-only t))
 
 (defun osx-dictionary-open-dictionary.app ()
@@ -209,7 +209,7 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
                                    (osx-dictionary-cli-find-or-recompile)
                                    (shell-quote-argument dictionary)
                                    (shell-quote-argument word)))))
-                     ;; Assuming that when a word is not fount in a dictionary
+                     ;; Assuming that when a word is not found in a dictionary
                      ;; output contains "kCFNotFound"
                      (unless (string-match "kCFNotFound" res)
                        res)))

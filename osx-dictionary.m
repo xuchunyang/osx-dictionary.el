@@ -8,6 +8,7 @@
 // Last Change: Thu Jan 22 2015
 
 #import <Foundation/Foundation.h>
+#import <CoreFoundation/CoreFoundation.h>
 #import <CoreServices/CoreServices.h>
 
 #include <getopt.h> // getopt_long
@@ -18,12 +19,13 @@
 
 // Obtain undocumented dictionary service API calls
 // -- thanks to https://github.com/mchinen/RSDeskDict for the research.
+// and https://github.com/mattt/DictionaryKit/blob/master/DictionaryKit/TTTDictionary.m
 CFArrayRef DCSCopyAvailableDictionaries();
 CFStringRef DCSDictionaryGetShortName(DCSDictionaryRef);
 DCSDictionaryRef DCSDictionaryCreate(CFURLRef url);
 CFArrayRef DCSCopyRecordsForSearchString(DCSDictionaryRef dictionary, CFStringRef string,
                                          void *u1, void *u2);
-CFStringRef DCSRecordCopyData(CFTypeRef record);
+CFStringRef DCSRecordCopyData(CFTypeRef record, long version);
 CFStringRef DCSDictionaryGetName(DCSDictionaryRef dictionary);
 CFStringRef DCSRecordGetRawHeadword(CFTypeRef record);
 CFStringRef DCSRecordGetString(CFTypeRef record);
@@ -37,6 +39,13 @@ CFDictionaryRef DCSCopyDefinitionMarkup (DCSDictionaryRef dictionary, CFStringRe
 
 extern CFStringRef DCSRecordGetHeadword(CFTypeRef);
 extern CFStringRef DCSRecordGetBody(CFTypeRef);
+
+typedef NS_ENUM(NSInteger, TTTDictionaryRecordVersion) {
+  TTTDictionaryVersionHTML = 0,
+  TTTDictionaryVersionHTMLWithAppCSS = 1,
+  TTTDictionaryVersionHTMLWithPopoverCSS = 2,
+  TTTDictionaryVersionText = 3,
+};
 
 void usage() {
   printf("Usage:\n\
@@ -95,9 +104,11 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  if (dict_name && word) {
+  DCSDictionaryRef dictionary = NULL;
+  NSString *ns_word = @(word);
+
+  if (dict_name) {
     NSString *dictionaryName = @(dict_name);
-    NSString *ns_word = @(word);
 
     dicts = (NSArray*)DCSCopyAvailableDictionaries();
     s_names = [NSMutableDictionary dictionaryWithCapacity:[dicts count]];
@@ -111,48 +122,58 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "Dictionary '%s' not found\n", dict_name);
       return -1;
     }
-    CFRange substringRange = DCSGetTermRangeInString((__bridge DCSDictionaryRef)d,
-                                                     (__bridge CFStringRef)ns_word, 0);
-    if (substringRange.location == kCFNotFound) {
-      fprintf(stderr, "kCFNotFound\n"); // no idea what's this kind of error
-      return -1;
-    }
-    NSString* subStr = [ns_word substringWithRange:NSMakeRange(substringRange.location,
-                                                               substringRange.length)];
-    NSArray* records = (NSArray*)DCSCopyRecordsForSearchString((__bridge DCSDictionaryRef)d,
-                                                               (__bridge CFStringRef)subStr, 0, 0);
-    NSString* defStr = @"";
-    if (records) {
-      for (NSObject* r in records) {
-        // CFStringRef data = DCSRecordGetTitle((__bridge CFTypeRef) r);
-        CFStringRef data = DCSRecordGetRawHeadword((__bridge CFTypeRef) r);
-        // CFStringRef data = DCSRecordGetHeadword((__bridge CFTypeRef) r);
-        if (data) {
-          NSString* recordDef =
-            (NSString*)DCSCopyTextDefinition((__bridge DCSDictionaryRef)d,
-                                             data,
-                                             CFRangeMake(0,CFStringGetLength(data)));
-          defStr = [defStr stringByAppendingString:[NSString stringWithFormat:@"%@\n\n", recordDef]];
-        }
-      }
-    }
-
-    if (defStr == nil || [defStr isEqualToString:@""]) {
-      fprintf(stderr, "definition of '%s' not found\n", word);
-      return -1;
-    } else {
-      result = defStr;
-    }
-  } else if (word) {            // Use Default Dictionary
-    NSString* ns_word = [NSString stringWithUTF8String:word];
-    result = (NSString*)DCSCopyTextDefinition(NULL, (CFStringRef)ns_word, CFRangeMake(0,[ns_word length]));
-    if (result == nil) {
-      fprintf(stderr, "definition of '%s' not found\n", word);
-      return -1;
-    }
+    dictionary = (DCSDictionaryRef)d;
   } else {
-    usage();
+    // Get the default dictionary
+    // NSTask *task = [NSTask new];
+    // [task setLaunchPath:@"/bin/sh"];
+    // [task setArguments:@[@"-c", @"defaults read -g com.apple.DictionaryServices | grep \"/[^\\\"]*\" -o | head -1"]];
+    // NSString *stringToRemove = [task description];
+    // [task launch];
+    // NSString *output = [[task description] stringByReplacingOccurrencesOfString:stringToRemove withString:@""];
+    // CFURLRef url = CFURLCreateWithFileSystemPath(NULL, (__bridge CFStringRef)output, kCFURLPOSIXPathStyle, true);
+    // dictionary = DCSDictionaryCreate(url);
+    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
+    NSArray *activeDictionaries = [[userDefaults objectForKey:@"com.apple.DictionaryServices"] objectForKey:@"DCSActiveDictionaries"];
+    NSString *path = activeDictionaries[0];
+    CFURLRef url = CFURLCreateWithFileSystemPath(NULL, (__bridge CFStringRef)path, kCFURLPOSIXPathStyle, true);
+    dictionary = DCSDictionaryCreate(url);
+  }
+
+  CFRange substringRange = DCSGetTermRangeInString((__bridge DCSDictionaryRef)dictionary,
+                                                   (__bridge CFStringRef)ns_word, 0);
+  if (substringRange.location == kCFNotFound) {
+    fprintf(stderr, "kCFNotFound\n"); // no idea what's this kind of error
     return -1;
+  }
+  NSString* subStr = [ns_word substringWithRange:NSMakeRange(substringRange.location,
+                                                             substringRange.length)];
+  NSArray* records = (NSArray*)DCSCopyRecordsForSearchString((__bridge DCSDictionaryRef)dictionary,
+                                                             (__bridge CFStringRef)subStr, 0, 0);
+  NSMutableString* defStr = [[NSMutableString alloc] init];
+  if (records) {
+    for (NSObject* r in records) {
+      // CFStringRef data = DCSRecordGetTitle((__bridge CFTypeRef) r);
+      // CFStringRef data = DCSRecordGetRawHeadword((__bridge CFTypeRef) r);
+      // CFStringRef data = DCSRecordGetHeadword((__bridge CFTypeRef) r);
+      // if (data) {
+      //   NSString* recordDef =
+      //     (NSString*)DCSCopyTextDefinition((__bridge DCSDictionaryRef)d,
+      //                                      data,
+      //                                      CFRangeMake(0,CFStringGetLength(data)));
+      //   defStr = [defStr stringByAppendingString:[NSString stringWithFormat:@"%@\n\n", recordDef]];
+      // }
+      NSString* text = (NSString*)DCSRecordCopyData(r, (long)TTTDictionaryVersionText);
+      [defStr appendString:text];
+      [defStr appendString:@"\n"];
+    }
+  }
+
+  if ([defStr isEqualToString:@""]) {
+    fprintf(stderr, "definition of '%s' not found\n", word);
+    return -1;
+  } else {
+    result = defStr;
   }
 
   char* r = (char*)[result UTF8String];
