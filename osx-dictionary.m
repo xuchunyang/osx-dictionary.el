@@ -143,7 +143,8 @@ int main(int argc, char *argv[]) {
   CFRange substringRange = DCSGetTermRangeInString((__bridge DCSDictionaryRef)dictionary,
                                                    (__bridge CFStringRef)ns_word, 0);
   if (substringRange.location == kCFNotFound) {
-    fprintf(stderr, "kCFNotFound\n"); // no idea what's this kind of error
+    // fprintf(stderr, "kCFNotFound\n"); // no idea what's this kind of error
+    fprintf(stderr, "definition of '%s' not found\n", word);
     return -1;
   }
   NSString* subStr = [ns_word substringWithRange:NSMakeRange(substringRange.location,
