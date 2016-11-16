@@ -1,12 +1,11 @@
-;;; osx-dictionary.el --- Interface for OSX Dictionary.app
+;;; osx-dictionary.el --- Interface for OSX Dictionary.app  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2014-2016 by Chunyang Xu
 
-;; Author: Chunyang Xu <xuchunyang56@gmail.com>
-;; Maintainer: Chunyang Xu <xuchunyang56@gmail.com>
+;; Author: Chunyang Xu <mail@xuchunyang.me>
+;; Maintainer: Chunyang Xu <mail@xuchunyang.me>
 ;; URL: https://github.com/xuchunyang/osx-dictionary.el
 ;; Package-Requires: ((cl-lib "0.5"))
-;; Version: 0.2.2
 ;; keywords: mac, dictionary
 
 ;; This program is free software; you can redistribute it and/or modify
