@@ -62,20 +62,6 @@ for more info."
                  (string :tag "Name of log file"))
   :group 'osx-dictionary)
 
-(defcustom osx-dictionary-dictionary-choice nil
-  "The specific dictionaries that should be used.
-
-If nil, use the first available dictionary in Dictionary.app.
-If non-nil, it should be a dictionary name or a list of dictionary
-names (i.e., string of a list of strings).
-
-In shell, run '`osx-dictionary-cli' -l' under this package's
-installation directory to list all available dictionaries."
-  :type '(choice (const :tag "Use the first available dictionary in Dictionary.app" nil)
-                 (string :tag "Dictionary")
-                 (repeat :tag "List of dictionaries" string))
-  :group 'osx-dictionary)
-
 (defcustom osx-dictionary-separator "--------------------\n"
   "Definitions separator."
   :type 'string
@@ -188,35 +174,10 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
      (concat word "\n") nil
      (expand-file-name osx-dictionary-search-log-file)))
   ;; Search
-  (cond ((null osx-dictionary-dictionary-choice)
-         (shell-command-to-string
-          (format "%s %s"
-                  (osx-dictionary-cli-find-or-recompile)
-                  (shell-quote-argument word))))
-        ((stringp osx-dictionary-dictionary-choice)
-         (shell-command-to-string
-          (format "%s -u %s %s"
-                  (osx-dictionary-cli-find-or-recompile)
-                  (shell-quote-argument osx-dictionary-dictionary-choice)
-                  (shell-quote-argument word))))
-        ((listp osx-dictionary-dictionary-choice)
-         (let ((outputs
-                (mapcar
-                 (lambda (dictionary)
-                   (let ((res
-                          (shell-command-to-string
-                           (format "%s -u %s %s"
-                                   (osx-dictionary-cli-find-or-recompile)
-                                   (shell-quote-argument dictionary)
-                                   (shell-quote-argument word)))))
-                     ;; Assuming that when a word is not found in a dictionary
-                     ;; output contains "kCFNotFound"
-                     (unless (string-match "kCFNotFound" res)
-                       res)))
-                 osx-dictionary-dictionary-choice)))
-           (mapconcat #'identity
-                      (remove nil outputs)
-                      osx-dictionary-separator)))))
+  (shell-command-to-string
+   (format "%s %s"
+           (osx-dictionary-cli-find-or-recompile)
+           (shell-quote-argument word))))
 
 (defun osx-dictionary-recompile ()
   "Create or replace the `osx-dictionary-cli' executable using the latest code."

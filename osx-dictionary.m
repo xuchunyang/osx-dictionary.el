@@ -1,182 +1,85 @@
-// Filename: osx-dictionary.m
-// Program: Access Mac OS X Dictionary.app from Command Line
-// Authors: Charles Francis <agentcoops@gmail.com>
-//          Chunyang Xu <xuchunyang56@gmail.com>
-// Inspired by: dictionary.m from dictionary.vim (https://github.com/itchyny/dictionary.vim)
-// Compile: clang -framework CoreServices -framework Foundation osx-dictionary.m -o osx-dictionary-cli
-// Usage: osx-dictionary-cli -h
-// Last Change: Thu Jan 22 2015
+// ============================================================================
+// Author: itchyny
+// URL: https://github.com/itchyny/dictionary.vim/blob/59a818b62990aecb0ab0a18b596ccd1ef5bb5eb2/autoload/dictionary.m
+// License: MIT License
+// Build: clang -framework CoreServices -framework Foundation osx-dictionary.m -o osx-dictionary-cli
+// Use: osx-dictionary-cli WORD
+// ============================================================================
 
 #import <Foundation/Foundation.h>
-#import <CoreFoundation/CoreFoundation.h>
 #import <CoreServices/CoreServices.h>
 
-#include <getopt.h> // getopt_long
+#define isnum(x)\
+  (('0' <= x && x <= '9'))
+#define isalpha(x)\
+  (('a' <= x && x <= 'z') || ('A' <= x && x <= 'Z'))
+#define tolower(x)\
+  (('A' <= x && x <= 'Z') ? ((x) - ('A' - 'a')) : (x))
 
-// No timestamp and program name
-#define NSLog(FORMAT, ...) printf("%s\n", \
-                                  [[NSString stringWithFormat:FORMAT, ##__VA_ARGS__] UTF8String]);
+NSString* dictionary(char* searchword) {
+  NSString* word = [NSString stringWithUTF8String:searchword];
+  return (NSString*)DCSCopyTextDefinition(NULL, (CFStringRef)word,
+                                          CFRangeMake(0, [word length]));
+}
 
-// Obtain undocumented dictionary service API calls
-// -- thanks to https://github.com/mchinen/RSDeskDict for the research.
-// and https://github.com/mattt/DictionaryKit/blob/master/DictionaryKit/TTTDictionary.m
-CFArrayRef DCSCopyAvailableDictionaries();
-CFStringRef DCSDictionaryGetShortName(DCSDictionaryRef);
-DCSDictionaryRef DCSDictionaryCreate(CFURLRef url);
-CFArrayRef DCSCopyRecordsForSearchString(DCSDictionaryRef dictionary, CFStringRef string,
-                                         void *u1, void *u2);
-CFStringRef DCSRecordCopyData(CFTypeRef record, long version);
-CFStringRef DCSDictionaryGetName(DCSDictionaryRef dictionary);
-CFStringRef DCSRecordGetRawHeadword(CFTypeRef record);
-CFStringRef DCSRecordGetString(CFTypeRef record);
-
-CFStringRef DCSRecordGetAssociatedObj(CFTypeRef record);
-CFStringRef DCSRecordCopyDataURL(CFTypeRef record);
-CFStringRef DCSRecordGetAnchor(CFTypeRef record);
-CFStringRef DCSRecordGetSubDictionary(CFTypeRef record);
-CFStringRef DCSRecordGetTitle(CFTypeRef record);
-CFDictionaryRef DCSCopyDefinitionMarkup (DCSDictionaryRef dictionary, CFStringRef record);
-
-extern CFStringRef DCSRecordGetHeadword(CFTypeRef);
-extern CFStringRef DCSRecordGetBody(CFTypeRef);
-
-typedef NS_ENUM(NSInteger, TTTDictionaryRecordVersion) {
-  TTTDictionaryVersionHTML = 0,
-  TTTDictionaryVersionHTMLWithAppCSS = 1,
-  TTTDictionaryVersionHTMLWithPopoverCSS = 2,
-  TTTDictionaryVersionText = 3,
-};
-
-void usage() {
-  printf("Usage:\n\
-  osx-dictionary-cli: [-h] [-l]\n\
-                      [-u dictionary] word\n\
-\n\
-Mac OS X Dictionary.app Console Version\n\
-\n\
-positional argument:\n\
-  word                        word to lookup\n\
-\n\
-optional arguments:\n\
-  -h, --help                  Show this help message and exit\n\
-  -l, --list-dicts            Display list of available dictionaries and exit\n\
-  -u, --user-dict=dictionary  Use only special dictionary, otherwise use default dictionary\n");
+NSString* suggest(char* w) {
+#define SORTEDSIZE 200
+#define WORDLENGTH 50
+#define HEADARG 25
+  char format[] = "look %s|head -n %d", command[512],
+       format_[] = "look %c%c|grep '%s'|head -n %d",
+       output[WORDLENGTH], *ptr, all[HEADARG][WORDLENGTH], *sorted[SORTEDSIZE];
+  int length[HEADARG], i, j = 0;
+  FILE* fp;
+  NSString* result;
+  if (w[0] == '^') sprintf(command, format_, w[1], w[4], w, HEADARG);
+  else             sprintf(command, format, w, HEADARG);
+  if ((fp = popen(command, "r")) == NULL) return nil;
+  for (i = 0; i < HEADARG; ++i) { all[i][0] = '\0'; length[i] = 0; }
+  for (i = 0; i < SORTEDSIZE; ++i) sorted[i] = NULL;
+  while (fgets(output, WORDLENGTH, fp) != NULL) {
+    if (j >= HEADARG) break;
+    if (isalpha(output[0])) {
+      strcpy(all[j], output);
+      length[j] = strlen(all[j]);
+      if ((ptr = strchr(all[j++], '\n')) != NULL) *ptr = '\0';
+      else length[j - 1] = 0;
+    }
+  }
+  pclose(fp); ptr = NULL;
+  for (i = 0; i < j; ++i) {
+    j = length[i] * 6 - 6;
+    if (0 < j && j < SORTEDSIZE) {
+      while (sorted[j] != NULL) ++j;
+      sorted[j] = all[i];
+      if (ptr == NULL) ptr = sorted[j];
+    }
+  }
+  for (i = 0 ; i < SORTEDSIZE; ++i)
+    if (sorted[i] != NULL && sorted[i][0] != '\0' &&
+       (result = dictionary(sorted[i])) != nil) return result;
+  return nil;
 }
 
 int main(int argc, char *argv[]) {
-  char *dict_name = NULL;
-  char *word = NULL;
-  int word_len = 0;
-  NSArray *dicts;
-  NSDictionary *s_names;
-  NSString *result;
-
-  struct option long_options[] = {
-    {"help", no_argument, 0, 'h'},
-    {"list-dicts", no_argument, 0, 'l'},
-    {"use-dict", required_argument, 0, 'u'},
-    {0, 0, 0, 0}
-  };
-  int option_index = 0;
-  int c;
-  while ((c = getopt_long(argc, argv, "hlu:", long_options, &option_index)) != -1)
-    switch (c) {
-    case 'h':
-      usage();
-      return 0;
-    case 'l':
-      dicts = (NSArray*)DCSCopyAvailableDictionaries();
-      for (NSObject *dict in dicts)
-        NSLog(@"%@",
-              (__bridge NSString*)DCSDictionaryGetShortName((__bridge DCSDictionaryRef)dict));
-      return 0;
-    case 'u':
-      dict_name = optarg;
-      break;
-    default:
-      usage();
-      return -1;
-    }
-
-  word = argv[optind];
-  if (word == NULL || (word_len = strlen(word)) == 0) {
-    usage();
-    return -1;
-  }
-
-  DCSDictionaryRef dictionary = NULL;
-  NSString *ns_word = @(word);
-
-  if (dict_name) {
-    NSString *dictionaryName = @(dict_name);
-
-    dicts = (NSArray*)DCSCopyAvailableDictionaries();
-    s_names = [NSMutableDictionary dictionaryWithCapacity:[dicts count]];
-    for (NSObject *d in dicts) {
-      NSString *sn = (__bridge NSString*)DCSDictionaryGetShortName((__bridge DCSDictionaryRef)d);
-      [s_names setValue:d forKey:sn];
-    }
-
-    NSObject *d = [s_names objectForKey:dictionaryName];
-    if (d == NULL) {
-      fprintf(stderr, "Dictionary '%s' not found\n", dict_name);
-      return -1;
-    }
-    dictionary = (DCSDictionaryRef)d;
-  } else {
-    // Get the default dictionary
-    // NSTask *task = [NSTask new];
-    // [task setLaunchPath:@"/bin/sh"];
-    // [task setArguments:@[@"-c", @"defaults read -g com.apple.DictionaryServices | grep \"/[^\\\"]*\" -o | head -1"]];
-    // NSString *stringToRemove = [task description];
-    // [task launch];
-    // NSString *output = [[task description] stringByReplacingOccurrencesOfString:stringToRemove withString:@""];
-    // CFURLRef url = CFURLCreateWithFileSystemPath(NULL, (__bridge CFStringRef)output, kCFURLPOSIXPathStyle, true);
-    // dictionary = DCSDictionaryCreate(url);
-    NSUserDefaults *userDefaults = [NSUserDefaults standardUserDefaults];
-    NSArray *activeDictionaries = [[userDefaults objectForKey:@"com.apple.DictionaryServices"] objectForKey:@"DCSActiveDictionaries"];
-    NSString *path = activeDictionaries[0];
-    CFURLRef url = CFURLCreateWithFileSystemPath(NULL, (__bridge CFStringRef)path, kCFURLPOSIXPathStyle, true);
-    dictionary = DCSDictionaryCreate(url);
-  }
-
-  CFRange substringRange = DCSGetTermRangeInString((__bridge DCSDictionaryRef)dictionary,
-                                                   (__bridge CFStringRef)ns_word, 0);
-  if (substringRange.location == kCFNotFound) {
-    // fprintf(stderr, "kCFNotFound\n"); // no idea what's this kind of error
-    fprintf(stderr, "definition of '%s' not found\n", word);
-    return -1;
-  }
-  NSString* subStr = [ns_word substringWithRange:NSMakeRange(substringRange.location,
-                                                             substringRange.length)];
-  NSArray* records = (NSArray*)DCSCopyRecordsForSearchString((__bridge DCSDictionaryRef)dictionary,
-                                                             (__bridge CFStringRef)subStr, 0, 0);
-  NSMutableString* defStr = [[NSMutableString alloc] init];
-  if (records) {
-    for (NSObject* r in records) {
-      // CFStringRef data = DCSRecordGetTitle((__bridge CFTypeRef) r);
-      // CFStringRef data = DCSRecordGetRawHeadword((__bridge CFTypeRef) r);
-      // CFStringRef data = DCSRecordGetHeadword((__bridge CFTypeRef) r);
-      // if (data) {
-      //   NSString* recordDef =
-      //     (NSString*)DCSCopyTextDefinition((__bridge DCSDictionaryRef)d,
-      //                                      data,
-      //                                      CFRangeMake(0,CFStringGetLength(data)));
-      //   defStr = [defStr stringByAppendingString:[NSString stringWithFormat:@"%@\n\n", recordDef]];
-      // }
-      NSString* text = (NSString*)DCSRecordCopyData(r, (long)TTTDictionaryVersionText);
-      [defStr appendString:text];
-      [defStr appendString:@"\n"];
+  int arglen = strlen(argv[1]);
+  if (argc < 2 || arglen == 0) return 0;
+  NSString* result = dictionary(argv[1]);
+  if (result == nil) {
+    int i, l;
+    if ((l = strlen(argv[1])) > 100) return 0;
+    for (i = 0; i < l; ++i)
+      if (!isalpha(argv[1][i])) return 0;
+    if ((result = suggest(argv[1])) == nil) {
+      if (l < 3) return 0;
+      int j; char s[l * 3 + 2]; s[0] = '^';
+      for (i = j = 0; i < l; ++i) {
+        s[++j] = argv[1][i]; s[++j] = '.'; s[++j] = '*';
+      }
+      s[++j] = '\0';
+      if ((result = suggest(s)) == nil) return 0;
     }
   }
-
-  if ([defStr isEqualToString:@""]) {
-    fprintf(stderr, "definition of '%s' not found\n", word);
-    return -1;
-  } else {
-    result = defStr;
-  }
-
   char* r = (char*)[result UTF8String];
   int len = strlen(r);
   if (len < 1) return 0;
@@ -196,16 +99,16 @@ int main(int argc, char *argv[]) {
   char paren = 1;
   char firstparen = 1;
   i = j = 0;
-  if (word_len + 9 < len) {
+  if (arglen + 9 < len) {
     char flg = 1;
-    for (i = 0; i < word_len; ++i) {
-      if (tolower(r[i]) != tolower(word[i])) {
+    for (i = 0; i < arglen; ++i) {
+      if (tolower(r[i]) != tolower(argv[1][i])) {
         flg = 0; break;
       }
     }
     if (flg) {
       if (r[i] == '.' || strncmp(r + i, paren3, 3) == 0) {
-        for (i = 0; i < word_len + (r[i] == '.'); ++i)
+        for (i = 0; i < arglen + (r[i] == '.'); ++i)
           s[j++] = r[i];
         s[j++] = '\n';
       } else {
@@ -257,7 +160,7 @@ int main(int argc, char *argv[]) {
                strncmp(r + i, "ORIGIN", 6) == 0) {
       s[j] = '\n';
       s[++j] = r[i];
-    } else if (i + 3 < len && isdigit(r[i]) && isdigit(r[i + 1]) && r[i + 2] == ' ' && 0 < i && !isdigit(r[i - 1])) {
+    } else if (i + 3 < len && isnum(r[i]) && isnum(r[i + 1]) && r[i + 2] == ' ' && 0 < i && !isnum(r[i - 1])) {
       newnum = (r[i] - '0') * 10 + (r[i + 1] - '0');
       if (0 < newnum && (num < newnum || newnum < 2) && newnum <= num + 2) {
         if (j > 1 && s[j - 1] != '\n') {
@@ -285,11 +188,13 @@ int main(int argc, char *argv[]) {
       if (slash == 1 && i + 1 < len && r[i + 1] != '\n' && firstparen != 2) {
         s[j] = r[i];
         s[++j] = '\n';
+        if (r[i + 1] == ' ')
+          ++i;
       } else {
         s[j] = r[i];
       }
       slash++;
-    } else if (i + 2 < len && isdigit(r[i]) && r[i + 1] == ' ' && 0 < i && !isdigit(r[i - 1])) {
+    } else if (i + 2 < len && isnum(r[i]) && r[i + 1] == ' ' && 0 < i && !isnum(r[i - 1])) {
       newnum = r[i] - '0';
       if (0 < newnum && (num < newnum || newnum < 2) && newnum <= num + 2) {
         if (j > 1 && s[j - 1] != '\n') {
@@ -312,7 +217,7 @@ int main(int argc, char *argv[]) {
       } else {
         s[j] = r[i];
       }
-    } else if (!num && paren && strncmp(r + i, paren1, 3) == 0 && j > 1 && s[j - 1] != '\n') {
+    } else if (!num && paren && strncmp(r + i, paren1, 3) == 0 && j > 2 && s[j - 1] != '\n' && s[j - 2] != '\n') {
       s[j] = '\n';
       s[++j] = r[i];
       s[++j] = r[++i];
@@ -326,24 +231,11 @@ int main(int argc, char *argv[]) {
     } else if (firstparen == 1 && r[i] == '(') {
       s[j] = r[i];
       firstparen = 2;
-    } else if (firstparen == 2 && r[i] == ')') {
-      s[j] = r[i];
-      if (i + 1 < len && r[i + 1] == ' ') {
-        s[++j] = '\n';
-        ++i;
-      }
-      firstparen = 0;
     } else {
       s[j] = r[i];
     }
   }
   s[j] = '\0';
   printf("%s", s);
-
   return 0;
 }
-
-// Local Variables:
-// fill-column: 100
-// c-basic-offset: 2
-// End:

@@ -24,14 +24,6 @@ Install from [MELPA](http://melpa.org) with:
 ;; Support Chinese word
 ;; (setq osx-dictionary-use-chinese-text-segmentation t)
 
-;; Choose explicitly a dictionary for searching (use the first available
-;; dictionary in Dictionary.app if not set)
-;; (setq osx-dictionary-dictionary-choice "Apple")
-;; To search in more than one dictionaries
-;; (setq osx-dictionary-dictionary-choice (list "English" "Simplified Chinese" "Spanish"))
-;; To search in all dictionaries
-;; (setq osx-dictionary-dictionary-choice (osx-dictionary-get-all-dictionaries))
-
 ;; Key bindings
 (global-set-key (kbd "C-c d") 'osx-dictionary-search-pointer)
 ;; (global-set-key (kbd "C-c i") 'osx-dictionary-search-input)
@@ -51,6 +43,10 @@ the most likely *Chinese word* under the cursor, you have to set
 Chinese word segmentation tool, please refer to
 [chinese-word-at-point#prerequisite](https://github.com/xuchunyang/chinese-word-at-point.el#prerequisite)
 for more info.
+
+## News
+
+- 2016/11 The option `osx-dictionary-dictionary-choice` was removed AFTER v0.2.2 for macOS Sierra support.
 
 ## Todo
 - [x] Save search history
