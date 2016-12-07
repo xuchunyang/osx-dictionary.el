@@ -123,6 +123,7 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
   (setq font-lock-defaults '(osx-dictionary-mode-font-lock-keywords)))
 
 (add-hook 'osx-dictionary-mode-hook #'read-only-mode)
+(add-hook 'osx-dictionary-mode-hook #'visual-line-mode)
 
 (defun osx-dictionary-open-dictionary.app ()
   "Open current searched `word' in Dictionary.app."
