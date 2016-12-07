@@ -43,8 +43,8 @@
 (require 'cl-lib)
 
 (defgroup osx-dictionary nil
-  "Mac OS X Dictionary.app interface for Emacs"
-  :group 'emacs)
+  "Mac OS X Dictionary.app interface for Emacs."
+  :group 'external)
 
 (defcustom osx-dictionary-use-chinese-text-segmentation nil
   "Set to t to enable Chinese text segmentation.
@@ -187,7 +187,7 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
     (expand-file-name osx-dictionary-cli)))
 
 (defun osx-dictionary-cli-find-or-recompile ()
-  "Find the osx-dictionary-cli. If it does not exist, recompile it."
+  "Find the osx-dictionary-cli.  If it does not exist, recompile it."
   (or
    (executable-find (expand-file-name osx-dictionary-cli osx-dictionary--load-dir))
    (executable-find osx-dictionary-cli)
