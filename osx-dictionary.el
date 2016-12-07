@@ -206,6 +206,7 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
           (progress-reporter-done progress-reporter))
         (osx-dictionary--goto-dictionary)
         (goto-char (point-min))
+        (visual-line-mode)
         (setq buffer-read-only t))
     (message "Nothing to look up")))
 
