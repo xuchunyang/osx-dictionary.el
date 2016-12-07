@@ -116,7 +116,7 @@ for more info."
 
 (define-derived-mode osx-dictionary-mode fundamental-mode "osx-dictionary"
   "Major mode to look up word through dictionary.
-\\{dictionary-mode-map}.
+\\{osx-dictionary-mode-map}.
 Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
 
   (setq header-line-format osx-dictionary-mode-header-line)
