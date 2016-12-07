@@ -120,8 +120,9 @@ for more info."
 Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
 
   (setq header-line-format osx-dictionary-mode-header-line)
-  (setq font-lock-defaults '(osx-dictionary-mode-font-lock-keywords))
-  (setq buffer-read-only t))
+  (setq font-lock-defaults '(osx-dictionary-mode-font-lock-keywords)))
+
+(add-hook 'osx-dictionary-mode-hook #'read-only-mode)
 
 (defun osx-dictionary-open-dictionary.app ()
   "Open current searched `word' in Dictionary.app."
@@ -197,16 +198,15 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
   "Make buffer for the searching result of WORD."
   (if word
       (with-current-buffer (get-buffer-create osx-dictionary-buffer-name)
-        (setq buffer-read-only nil)
-        (erase-buffer)
-        (let ((progress-reporter
-               (make-progress-reporter (format "Searching (%s)..." word)
-                                       nil nil)))
-          (insert (osx-dictionary--search word))
-          (progress-reporter-done progress-reporter))
-        (osx-dictionary--goto-dictionary)
-        (goto-char (point-min))
-        (setq buffer-read-only t))
+        (let ((inhibit-read-only t))
+          (erase-buffer)
+          (let ((progress-reporter
+                 (make-progress-reporter (format "Searching (%s)..." word)
+                                         nil nil)))
+            (insert (osx-dictionary--search word))
+            (progress-reporter-done progress-reporter))
+          (osx-dictionary--goto-dictionary)
+          (goto-char (point-min))))
     (message "Nothing to look up")))
 
 ;;;###autoload
