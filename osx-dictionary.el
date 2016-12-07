@@ -30,7 +30,7 @@
 ;; Below are commands you can use:
 ;; `osx-dictionary-search-input'
 ;; Search input word and display result with buffer
-;; `osx-dictionary-search-pointer'
+;; `osx-dictionary-search-word-at-point'
 ;; Search word around and display result with buffer
 ;;
 

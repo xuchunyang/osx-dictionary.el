@@ -15,7 +15,7 @@ Install from [MELPA](http://melpa.org) with:
 
 ## Usage
 
-* `osx-dictionary-search-pointer` Search word around and display result with buffer
+* `osx-dictionary-search-word-at-point` Search word at point and display result with buffer
 * `osx-dictionary-search-input` Search input word and display result with buffer
 
 ## Sample configuration
@@ -25,7 +25,7 @@ Install from [MELPA](http://melpa.org) with:
 ;; (setq osx-dictionary-use-chinese-text-segmentation t)
 
 ;; Key bindings
-(global-set-key (kbd "C-c d") 'osx-dictionary-search-pointer)
+(global-set-key (kbd "C-c d") 'osx-dictionary-search-word-at-point)
 ;; (global-set-key (kbd "C-c i") 'osx-dictionary-search-input)
 
 ;; Work with popwin-el (https://github.com/m2ym/popwin-el)
@@ -47,10 +47,3 @@ for more info.
 ## News
 
 - 2016/11 The option `osx-dictionary-dictionary-choice` was removed AFTER v0.2.2 for macOS Sierra support.
-
-## Todo
-- [x] Save search history
-- [ ] Improve regex for highlight
-  - [ ] Add more keywords, for example, "名" and "代"
-  - [ ] Adopt more precise matching
-- [x] Use Chinese text segmentation for better Chinese translation
