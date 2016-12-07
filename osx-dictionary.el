@@ -206,7 +206,9 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
             (insert (osx-dictionary--search word))
             (progress-reporter-done progress-reporter))
           (osx-dictionary--goto-dictionary)
-          (goto-char (point-min))))
+          (goto-char (point-min))
+          (let ((buffer-read-only nil))
+            (whitespace-cleanup))))
     (message "Nothing to look up")))
 
 ;;;###autoload
