@@ -62,8 +62,9 @@ NSString* suggest(char* w) {
 }
 
 int main(int argc, char *argv[]) {
+  if (argc < 2) return 0;
   int arglen = strlen(argv[1]);
-  if (argc < 2 || arglen == 0) return 0;
+  if (arglen == 0) return 0;
   NSString* result = dictionary(argv[1]);
   if (result == nil) {
     int i, l;
