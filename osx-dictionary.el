@@ -178,7 +178,7 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
   ;; Search
   (shell-command-to-string
    (format "%s %s"
-           (osx-dictionary-cli-find-or-recompile)
+           (shell-quote-argument (osx-dictionary-cli-find-or-recompile))
            (shell-quote-argument word))))
 
 (defun osx-dictionary-recompile ()
@@ -235,7 +235,10 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
 ;;;###autoload
 (defun osx-dictionary-get-all-dictionaries ()
   "Get all dictionaries as a list."
-  (split-string (shell-command-to-string (format "%s -l" (osx-dictionary-cli-find-or-recompile))) "\n"))
+  (split-string
+   (shell-command-to-string
+    (format "%s -l" (shell-quote-argument (osx-dictionary-cli-find-or-recompile))))
+   "\n"))
 
 (defun osx-dictionary--region-or-word ()
   "Return region or word around point.
