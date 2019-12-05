@@ -177,7 +177,7 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
      (expand-file-name osx-dictionary-search-log-file)))
   ;; Search
   (shell-command-to-string
-   (format "%s %s"
+   (format "%s %s 2>/dev/null"
            (shell-quote-argument (osx-dictionary-cli-find-or-recompile))
            (shell-quote-argument word))))
 
