@@ -129,16 +129,17 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
 (defun osx-dictionary-open-dictionary.app ()
   "Open current searched `word' in Dictionary.app."
   (interactive)
-  (save-excursion
-    (goto-char (point-min))
-    (shell-command (format "open dict://%s" (thing-at-point 'word)))))
+  (shell-command (format "open dict://%s" (osx-dictionary--get-current-word))))
 
 (defun osx-dictionary-read-word ()
   "Open current searched `word' in Dictionary.app."
   (interactive)
+  (shell-command (concat "say " (shell-quote-argument (osx-dictionary--get-current-word)))))
+
+(defun osx-dictionary--get-current-word ()
   (save-excursion
     (goto-char (point-min))
-    (shell-command (concat "say " (shell-quote-argument (thing-at-point 'word))))))
+    (thing-at-point 'word)))
 
 (defun osx-dictionary-quit ()
   "Quit osx-dictionary: reselect previously selected buffer."
