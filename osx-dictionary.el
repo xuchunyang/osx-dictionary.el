@@ -139,7 +139,7 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
 (defun osx-dictionary--get-current-word ()
   (save-excursion
     (goto-char (point-min))
-    (thing-at-point 'word)))
+    (string-replace "·" "" (thing-at-point 'word))))
 
 (defun osx-dictionary-quit ()
   "Quit osx-dictionary: reselect previously selected buffer."
