@@ -231,6 +231,7 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
   (let ((word (osx-dictionary--region-or-word)))
     (osx-dictionary--view-result word)))
 
+;;;###autoload
 (defalias 'osx-dictionary-search-word-at-point 'osx-dictionary-search-pointer)
 
 ;;;###autoload
