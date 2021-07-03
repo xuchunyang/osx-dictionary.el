@@ -70,7 +70,18 @@ for more info."
 (defconst osx-dictionary-cli "osx-dictionary-cli"
   "The name of executable file compiled from \"osx-dictionary.m\".")
 
-(defconst osx-dictionary-buffer-name "*osx-dictionary*")
+(defvar osx-dictionary-buffer-name "*osx-dictionary*")
+
+(defun osx-dictionary-generate-buffer-name-default-function (_word)
+  osx-dictionary-buffer-name)
+
+(defcustom osx-dictionary-generate-buffer-name-function
+  'osx-dictionary-generate-buffer-name-default-function
+  "The function used to generate the name for a osx-dictionary buffer.
+The function takes the WORD as the sole argument."
+  :group 'osx-dictionary
+  :type '(radio (function-item osx-dictionary-generate-buffer-name-default-function)
+                (function :tag "Function")))
 
 (defconst osx-dictionary--load-dir (file-name-directory
                                     (or load-file-name buffer-file-name)))
@@ -148,22 +159,22 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
       (progn
         (set-window-configuration osx-dictionary-previous-window-configuration)
         (setq osx-dictionary-previous-window-configuration nil)
-        (bury-buffer (osx-dictionary--get-buffer)))
+        (bury-buffer))
     (bury-buffer)))
 
-(defun osx-dictionary--get-buffer ()
+(defun osx-dictionary--get-buffer (word)
   "Get the osx-dictionary buffer.  Create one if there's none."
-  (let ((buffer (get-buffer-create osx-dictionary-buffer-name)))
+  (let ((buffer (get-buffer-create (funcall osx-dictionary-generate-buffer-name-function word))))
     (with-current-buffer buffer
       (unless (eq major-mode 'osx-dictionary-mode)
         (osx-dictionary-mode)))
     buffer))
 
-(defun osx-dictionary--goto-dictionary ()
+(defun osx-dictionary--goto-dictionary (word)
   "Switch to osx-dictionary buffer in other window."
   (setq osx-dictionary-previous-window-configuration
         (current-window-configuration))
-  (let* ((buffer (osx-dictionary--get-buffer))
+  (let* ((buffer (osx-dictionary--get-buffer word))
          (window (get-buffer-window buffer)))
     (if (null window)
         (switch-to-buffer-other-window buffer)
@@ -200,7 +211,8 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
 (defun osx-dictionary--view-result (word)
   "Make buffer for the searching result of WORD."
   (if word
-      (with-current-buffer (get-buffer-create osx-dictionary-buffer-name)
+      (with-current-buffer (get-buffer-create
+                            (funcall osx-dictionary-generate-buffer-name-function word))
         (let ((inhibit-read-only t))
           (erase-buffer)
           (let ((progress-reporter
@@ -208,7 +220,7 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
                                          nil nil)))
             (insert (osx-dictionary--search word))
             (progress-reporter-done progress-reporter))
-          (osx-dictionary--goto-dictionary)
+          (osx-dictionary--goto-dictionary word)
           (goto-char (point-min))
           (let ((buffer-read-only nil))
             (whitespace-cleanup))))
