@@ -6,7 +6,6 @@
 // Use: osx-dictionary-cli WORD
 // ============================================================================
 
-#import <Foundation/Foundation.h>
 #import <CoreServices/CoreServices.h>
 
 #define isnum(x)\
