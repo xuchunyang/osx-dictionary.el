@@ -143,7 +143,7 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
   (shell-command (format "open dict://%s" (osx-dictionary--get-current-word))))
 
 (defun osx-dictionary-read-word ()
-  "Open current searched `word' in Dictionary.app."
+  "Read current searched `word' using text-to-speech service."
   (interactive)
   (shell-command (concat "say " (shell-quote-argument (osx-dictionary--get-current-word)))))
 
