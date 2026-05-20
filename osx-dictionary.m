@@ -16,10 +16,35 @@
 #define tolower(x)\
   (('A' <= x && x <= 'Z') ? ((x) - ('A' - 'a')) : (x))
 
+extern DCSDictionaryRef DCSGetDefaultDictionary(void);
+extern CFArrayRef DCSCopyRecordsForSearchString(DCSDictionaryRef dict, CFStringRef string, void*, void*);
+extern CFStringRef DCSRecordCopyData(CFTypeRef record, long version);
+
 NSString* dictionary(char* searchword) {
   NSString* word = [NSString stringWithUTF8String:searchword];
   return (NSString*)DCSCopyTextDefinition(NULL, (CFStringRef)word,
                                           CFRangeMake(0, [word length]));
+}
+
+NSArray* dictionaryAll(char* searchword) {
+  NSString* word = [NSString stringWithUTF8String:searchword];
+  DCSDictionaryRef defaultDict = DCSGetDefaultDictionary();
+  if (!defaultDict) return [NSArray array];
+
+  NSArray* records = (NSArray*)DCSCopyRecordsForSearchString(
+      defaultDict, (CFStringRef)word, NULL, NULL);
+  if (!records) return [NSArray array];
+
+  NSMutableArray* results = [NSMutableArray array];
+  NSMutableSet* seen = [NSMutableSet set];
+  for (id record in records) {
+    NSString* data = (NSString*)DCSRecordCopyData((CFTypeRef)record, 3);
+    if (data && [data length] > 0 && ![seen containsObject:data]) {
+      [seen addObject:data];
+      [results addObject:data];
+    }
+  }
+  return results;
 }
 
 NSString* suggest(char* w) {
@@ -61,29 +86,8 @@ NSString* suggest(char* w) {
   return nil;
 }
 
-int main(int argc, char *argv[]) {
-  if (argc < 2) return 0;
-  int arglen = strlen(argv[1]);
-  if (arglen == 0) return 0;
-  NSString* result = dictionary(argv[1]);
-  if (result == nil) {
-    int i, l;
-    if ((l = strlen(argv[1])) > 100) return 0;
-    for (i = 0; i < l; ++i)
-      if (!isalpha(argv[1][i])) return 0;
-    if ((result = suggest(argv[1])) == nil) {
-      if (l < 3) return 0;
-      int j; char s[l * 3 + 2]; s[0] = '^';
-      for (i = j = 0; i < l; ++i) {
-        s[++j] = argv[1][i]; s[++j] = '.'; s[++j] = '*';
-      }
-      s[++j] = '\0';
-      if ((result = suggest(s)) == nil) return 0;
-    }
-  }
-  char* r = (char*)[result UTF8String];
-  int len = strlen(r);
-  if (len < 1) return 0;
+void format_and_print(const char* r, int len, const char* word, int arglen) {
+  if (len < 1) return;
   char s[len * 2];
   int i, j;
   char nr1[] = { -30, -106, -72 };
@@ -103,7 +107,7 @@ int main(int argc, char *argv[]) {
   if (arglen + 9 < len) {
     char flg = 1;
     for (i = 0; i < arglen; ++i) {
-      if (tolower(r[i]) != tolower(argv[1][i])) {
+      if (tolower(r[i]) != tolower(word[i])) {
         flg = 0; break;
       }
     }
@@ -238,5 +242,43 @@ int main(int argc, char *argv[]) {
   }
   s[j] = '\0';
   printf("%s", s);
+}
+
+int main(int argc, char *argv[]) {
+  if (argc < 2) return 0;
+  int arglen = strlen(argv[1]);
+  if (arglen == 0) return 0;
+
+  NSArray* results = dictionaryAll(argv[1]);
+
+  if ([results count] == 0) {
+    int i, l;
+    if ((l = strlen(argv[1])) > 100) return 0;
+    for (i = 0; i < l; ++i)
+      if (!isalpha(argv[1][i])) return 0;
+    NSString* result;
+    if ((result = suggest(argv[1])) == nil) {
+      if (l < 3) return 0;
+      int j; char s[l * 3 + 2]; s[0] = '^';
+      for (i = j = 0; i < l; ++i) {
+        s[++j] = argv[1][i]; s[++j] = '.'; s[++j] = '*';
+      }
+      s[++j] = '\0';
+      if ((result = suggest(s)) == nil) return 0;
+    }
+    const char* r = [result UTF8String];
+    format_and_print(r, (int)strlen(r), argv[1], arglen);
+    return 0;
+  }
+
+  int printed = 0;
+  for (NSString* result in results) {
+    const char* r = [result UTF8String];
+    int len = (int)strlen(r);
+    if (len < 1) continue;
+    if (printed > 0) printf("\n--------------------\n");
+    format_and_print(r, len, argv[1], arglen);
+    printed++;
+  }
   return 0;
 }
