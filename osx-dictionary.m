@@ -5,7 +5,8 @@
 // Build: clang -framework CoreServices -framework Foundation osx-dictionary.m -o osx-dictionary-cli
 // Use: osx-dictionary-cli WORD                    -- search every dictionary active in Dictionary.app
 //      osx-dictionary-cli -d NAME WORD            -- search only the dictionary named NAME
-//      osx-dictionary-cli -d NAME -d NAME2 ... WORD -- search only the union of the named dictionaries
+//      osx-dictionary-cli -d NAME -d NAME2 ... WORD -- search only the union of the named dictionaries,
+//                                                     each block labeled \x01NAME\x01 on its own line
 //      osx-dictionary-cli -l                      -- list installed dictionaries by name (for -d)
 // ============================================================================
 
@@ -284,11 +285,16 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  NSMutableArray* restrictTo = [NSMutableArray array];
+  // Parallel arrays: names[k] is the display name of dicts[k].
+  NSMutableArray* names = [NSMutableArray array];
+  NSMutableArray* dicts = [NSMutableArray array];
   int i = 1;
   while (i + 1 < argc && strcmp(argv[i], "-d") == 0) {
     DCSDictionaryRef dict = dictionaryNamed(argv[i + 1]);
-    if (dict) [restrictTo addObject:(id)dict];
+    if (dict) {
+      [names addObject:[NSString stringWithUTF8String:argv[i + 1]]];
+      [dicts addObject:(id)dict];
+    }
     i += 2;
   }
   BOOL restricted = i > 1;
@@ -299,15 +305,41 @@ int main(int argc, char *argv[]) {
   if (arglen == 0) return 0;
 
   NSString* nsword = [NSString stringWithUTF8String:word];
-  NSArray* results = restricted
-      ? recordsForDictionaries(restrictTo, nsword)
-      : dictionaryAll(nsword);
+
+  if (restricted) {
+    // Label each block with its source dictionary's name -- but only when
+    // more than one is in play, so a single-dictionary restriction (already
+    // named atop the Emacs buffer) doesn't get the same name repeated right
+    // below it. Emacs turns \x01NAME\x01 lines into a headed section; see
+    // osx-dictionary--insert-search-result.
+    BOOL label = [dicts count] > 1;
+    int printed = 0;
+    for (NSUInteger k = 0; k < [dicts count]; k++) {
+      NSArray* results = recordsForDictionary((DCSDictionaryRef)dicts[k], nsword);
+      BOOL first_of_dict = YES;
+      for (NSString* result in results) {
+        const char* r = [result UTF8String];
+        int len = (int)strlen(r);
+        if (len < 1) continue;
+        if (label && first_of_dict) {
+          if (printed > 0) printf("\n\n");
+          printf("\x01%s\x01\n", [names[k] UTF8String]);
+        } else if (printed > 0) {
+          printf("\n--------------------\n");
+        }
+        first_of_dict = NO;
+        format_and_print(r, len, word, arglen);
+        printed++;
+      }
+    }
+    // Nothing found in the restricted set: don't fall back to the fuzzy
+    // `look'-based suggestion below, which ignores the restriction.
+    return 0;
+  }
+
+  NSArray* results = dictionaryAll(nsword);
 
   if ([results count] == 0) {
-    // A specific dictionary was requested and had nothing: don't fall back to
-    // the fuzzy `look'-based suggestion below, which ignores the restriction.
-    if (restricted) return 0;
-
     int i, l;
     if ((l = strlen(word)) > 100) return 0;
     for (i = 0; i < l; ++i)

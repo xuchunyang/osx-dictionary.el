@@ -257,7 +257,9 @@ nil when neither applies, so the CLI falls back to Dictionary.app's own
                  names " "))))
 
 (defun osx-dictionary--search (word)
-  "Search WORD, restricted per `osx-dictionary--search-dictionary-args'."
+  "Search WORD, restricted per `osx-dictionary--search-dictionary-args'.
+When more than one dictionary is queried, each one's block is preceded by
+a line of the form \\x01NAME\\x01 -- see `osx-dictionary--insert-search-result'."
   ;; Save to history file
   (when osx-dictionary-search-log-file
     (append-to-file
@@ -270,6 +272,22 @@ nil when neither applies, so the CLI falls back to Dictionary.app's own
            (let ((args (osx-dictionary--search-dictionary-args)))
              (if args (concat args " ") ""))
            (shell-quote-argument word))))
+
+(defun osx-dictionary--insert-search-result (word)
+  "Insert the search result for WORD at point.
+Turns each \\x01NAME\\x01 marker line `osx-dictionary--search' may have
+embedded (one per dictionary, when more than one was queried) into a
+heading naming that dictionary, styled like
+`osx-dictionary--current-dictionary-description' atop the buffer."
+  (let ((start (point)))
+    (insert (osx-dictionary--search word))
+    (save-excursion
+      (goto-char start)
+      (while (re-search-forward "\x01\\([^\x01\n]*\\)\x01\n" nil t)
+        (replace-match
+         (concat (propertize (match-string 1) 'font-lock-face 'osx-dictionary-dictionary-name)
+                 "\n\n")
+         nil t)))))
 
 (defun osx-dictionary-recompile ()
   "Create or replace the `osx-dictionary-cli' executable using the latest code."
@@ -301,7 +319,7 @@ nil when neither applies, so the CLI falls back to Dictionary.app's own
           (let ((progress-reporter
                  (make-progress-reporter (format "Searching (%s)..." word)
                                          nil nil)))
-            (insert (osx-dictionary--search word))
+            (osx-dictionary--insert-search-result word)
             (progress-reporter-done progress-reporter))
           (osx-dictionary--goto-dictionary word)
           (goto-char (point-min))
