@@ -17,7 +17,17 @@ Install from [MELPA](http://melpa.org) with:
 
 * `osx-dictionary-search-word-at-point` Search word at point and display result with buffer
 * `osx-dictionary-search-input` Search input word and display result with buffer
-* `osx-dictionary-select-dictionary` Restrict lookups to one installed dictionary, or back to all active ones; the choice persists across sessions (`osx-dictionary-last-dictionary-file`). The dictionaries offered, and their order, can be narrowed with `osx-dictionary-allowed-dictionaries`
+* `osx-dictionary-select-dictionary` Restrict lookups to one installed dictionary, or to a list you configure via `osx-dictionary-allowed-dictionaries` (or back to every dictionary active in Dictionary.app). The choice persists across sessions (`osx-dictionary-last-dictionary-file`). When more than one dictionary ends up being searched, each block of results is labeled with the dictionary it came from. Called again from inside a result buffer, it also re-searches the word already shown there, so switching dictionaries immediately shows that word's entry from the new one.
+
+Inside a result buffer:
+
+| Key | Action |
+|-----|--------|
+| `s` | search another word |
+| `S` | select a different dictionary (re-searches the current word) |
+| `o` | open the current word in Dictionary.app |
+| `r` | read the current word aloud |
+| `q` | quit |
 
 ## Sample configuration
 
@@ -27,7 +37,13 @@ Install from [MELPA](http://melpa.org) with:
 
 ;; Key bindings
 (global-set-key (kbd "C-c d") 'osx-dictionary-search-word-at-point)
+;; (global-set-key (kbd "C-c D") 'osx-dictionary-select-dictionary)
 ;; (global-set-key (kbd "C-c i") 'osx-dictionary-search-input)
+
+;; Narrow down which dictionaries `osx-dictionary-select-dictionary' offers,
+;; and in what order:
+;; (setq osx-dictionary-allowed-dictionaries
+;;       '("New Oxford American Dictionary" "Oxford Dictionary of English"))
 
 ;; Work with popwin-el (https://github.com/m2ym/popwin-el)
 ;; (push "*osx-dictionary*" popwin:special-display-config)
