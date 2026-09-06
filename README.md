@@ -17,6 +17,7 @@ Install from [MELPA](http://melpa.org) with:
 
 * `osx-dictionary-search-word-at-point` Search word at point and display result with buffer
 * `osx-dictionary-search-input` Search input word and display result with buffer
+* `osx-dictionary-select-dictionary` Restrict lookups to one installed dictionary, or back to all active ones; the choice persists across sessions (`osx-dictionary-last-dictionary-file`)
 
 ## Sample configuration
 
@@ -47,3 +48,4 @@ for more info.
 ## News
 
 - 2016/11 The option `osx-dictionary-dictionary-choice` was removed AFTER v0.2.2 for macOS Sierra support.
+- Dictionary selection is back (`osx-dictionary-select-dictionary`), implemented differently from the removed option: it resolves the chosen dictionary via `DCSCopyAvailableDictionaries`/`DCSDictionaryGetName` rather than reconstructing a `DCSDictionaryRef` from the `com.apple.DictionaryServices` default (the mechanism that broke on Sierra).

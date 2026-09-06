@@ -3,7 +3,9 @@
 // URL: https://github.com/itchyny/dictionary.vim/blob/59a818b62990aecb0ab0a18b596ccd1ef5bb5eb2/autoload/dictionary.m
 // License: MIT License
 // Build: clang -framework CoreServices -framework Foundation osx-dictionary.m -o osx-dictionary-cli
-// Use: osx-dictionary-cli WORD
+// Use: osx-dictionary-cli WORD          -- search every dictionary active in Dictionary.app
+//      osx-dictionary-cli -d NAME WORD  -- search only the dictionary named NAME
+//      osx-dictionary-cli -l            -- list installed dictionaries by name (for -d)
 // ============================================================================
 
 #import <Foundation/Foundation.h>
@@ -19,6 +21,8 @@
 extern DCSDictionaryRef DCSGetDefaultDictionary(void);
 extern CFArrayRef DCSCopyRecordsForSearchString(DCSDictionaryRef dict, CFStringRef string, void*, void*);
 extern CFStringRef DCSRecordCopyData(CFTypeRef record, long version);
+extern CFArrayRef DCSCopyAvailableDictionaries(void);
+extern CFStringRef DCSDictionaryGetName(DCSDictionaryRef dictionary);
 
 NSString* dictionary(char* searchword) {
   NSString* word = [NSString stringWithUTF8String:searchword];
@@ -26,13 +30,10 @@ NSString* dictionary(char* searchword) {
                                           CFRangeMake(0, [word length]));
 }
 
-NSArray* dictionaryAll(char* searchword) {
-  NSString* word = [NSString stringWithUTF8String:searchword];
-  DCSDictionaryRef defaultDict = DCSGetDefaultDictionary();
-  if (!defaultDict) return [NSArray array];
-
-  NSArray* records = (NSArray*)DCSCopyRecordsForSearchString(
-      defaultDict, (CFStringRef)word, NULL, NULL);
+// Unique, non-empty definition texts DICT returns for WORD.
+NSArray* recordsForDictionary(DCSDictionaryRef dict, NSString* word) {
+  if (!dict) return [NSArray array];
+  NSArray* records = (NSArray*)DCSCopyRecordsForSearchString(dict, (CFStringRef)word, NULL, NULL);
   if (!records) return [NSArray array];
 
   NSMutableArray* results = [NSMutableArray array];
@@ -45,6 +46,30 @@ NSArray* dictionaryAll(char* searchword) {
     }
   }
   return results;
+}
+
+NSArray* dictionaryAll(NSString* word) {
+  return recordsForDictionary(DCSGetDefaultDictionary(), word);
+}
+
+// Installed dictionary named NAME, or NULL. Dictionary objects come straight
+// from DCSCopyAvailableDictionaries, never reconstructed via DCSDictionaryCreate
+// (that path -- reading the active-dictionaries default + rebuilding a ref from
+// its file URL -- is what broke on Sierra; see git history).
+DCSDictionaryRef dictionaryNamed(const char* name) {
+  NSString* target = [NSString stringWithUTF8String:name];
+  for (id dict in (NSArray*)DCSCopyAvailableDictionaries()) {
+    if ([(NSString*)DCSDictionaryGetName((DCSDictionaryRef)dict) isEqualToString:target])
+      return (DCSDictionaryRef)dict;
+  }
+  return NULL;
+}
+
+void listDictionaries(void) {
+  for (id dict in (NSArray*)DCSCopyAvailableDictionaries()) {
+    NSString* name = (NSString*)DCSDictionaryGetName((DCSDictionaryRef)dict);
+    if (name) printf("%s\n", [name UTF8String]);
+  }
 }
 
 NSString* suggest(char* w) {
@@ -246,28 +271,53 @@ void format_and_print(const char* r, int len, const char* word, int arglen) {
 
 int main(int argc, char *argv[]) {
   if (argc < 2) return 0;
-  int arglen = strlen(argv[1]);
+
+  if (strcmp(argv[1], "-l") == 0) {
+    listDictionaries();
+    return 0;
+  }
+
+  char* word;
+  BOOL restricted = NO;
+  DCSDictionaryRef restrictTo = NULL;
+  if (strcmp(argv[1], "-d") == 0) {
+    if (argc < 4) return 0;
+    restricted = YES;
+    restrictTo = dictionaryNamed(argv[2]);
+    word = argv[3];
+  } else {
+    word = argv[1];
+  }
+
+  int arglen = strlen(word);
   if (arglen == 0) return 0;
 
-  NSArray* results = dictionaryAll(argv[1]);
+  NSString* nsword = [NSString stringWithUTF8String:word];
+  NSArray* results = restricted
+      ? recordsForDictionary(restrictTo, nsword)
+      : dictionaryAll(nsword);
 
   if ([results count] == 0) {
+    // A specific dictionary was requested and had nothing: don't fall back to
+    // the fuzzy `look'-based suggestion below, which ignores the restriction.
+    if (restricted) return 0;
+
     int i, l;
-    if ((l = strlen(argv[1])) > 100) return 0;
+    if ((l = strlen(word)) > 100) return 0;
     for (i = 0; i < l; ++i)
-      if (!isalpha(argv[1][i])) return 0;
+      if (!isalpha(word[i])) return 0;
     NSString* result;
-    if ((result = suggest(argv[1])) == nil) {
+    if ((result = suggest(word)) == nil) {
       if (l < 3) return 0;
       int j; char s[l * 3 + 2]; s[0] = '^';
       for (i = j = 0; i < l; ++i) {
-        s[++j] = argv[1][i]; s[++j] = '.'; s[++j] = '*';
+        s[++j] = word[i]; s[++j] = '.'; s[++j] = '*';
       }
       s[++j] = '\0';
       if ((result = suggest(s)) == nil) return 0;
     }
     const char* r = [result UTF8String];
-    format_and_print(r, (int)strlen(r), argv[1], arglen);
+    format_and_print(r, (int)strlen(r), word, arglen);
     return 0;
   }
 
@@ -277,7 +327,7 @@ int main(int argc, char *argv[]) {
     int len = (int)strlen(r);
     if (len < 1) continue;
     if (printed > 0) printf("\n--------------------\n");
-    format_and_print(r, len, argv[1], arglen);
+    format_and_print(r, len, word, arglen);
     printed++;
   }
   return 0;

@@ -33,6 +33,9 @@
 ;; Search input word and display result with buffer
 ;; `osx-dictionary-search-word-at-point'
 ;; Search word around and display result with buffer
+;; `osx-dictionary-select-dictionary'
+;; Restrict lookups to one installed dictionary (or back to all active ones);
+;; the choice persists across sessions
 ;;
 
 ;;; Installation:
@@ -67,6 +70,37 @@ for more info."
   :type 'string
   :group 'osx-dictionary)
 
+(defcustom osx-dictionary-last-dictionary-file
+  (locate-user-emacs-file "osx-dictionary-last-dictionary")
+  "File used to persist the dictionary chosen by `osx-dictionary-select-dictionary'.
+Set to nil to disable persistence, so the choice only lasts the session."
+  :type '(choice (const :tag "Don't persist across sessions" nil)
+                 (file :tag "File"))
+  :group 'osx-dictionary)
+
+(defvar osx-dictionary-current-dictionary nil
+  "Name of the dictionary `osx-dictionary' restricts lookups to.
+Nil means search every dictionary enabled in Dictionary.app (the default).
+Set via `osx-dictionary-select-dictionary', which also persists it to
+`osx-dictionary-last-dictionary-file'.")
+
+(defun osx-dictionary--load-last-dictionary ()
+  "Restore `osx-dictionary-current-dictionary' from `osx-dictionary-last-dictionary-file'."
+  (when (and osx-dictionary-last-dictionary-file
+             (file-exists-p osx-dictionary-last-dictionary-file))
+    (setq osx-dictionary-current-dictionary
+          (with-temp-buffer
+            (insert-file-contents osx-dictionary-last-dictionary-file)
+            (ignore-errors (read (current-buffer)))))))
+
+(defun osx-dictionary--save-last-dictionary ()
+  "Persist `osx-dictionary-current-dictionary' to `osx-dictionary-last-dictionary-file'."
+  (when osx-dictionary-last-dictionary-file
+    (with-temp-file osx-dictionary-last-dictionary-file
+      (prin1 osx-dictionary-current-dictionary (current-buffer)))))
+
+(osx-dictionary--load-last-dictionary)
+
 (defconst osx-dictionary-cli "osx-dictionary-cli"
   "The name of executable file compiled from \"osx-dictionary.m\".")
 
@@ -90,6 +124,9 @@ The function takes the WORD as the sole argument."
   '(
     (:propertize "s" face mode-line-buffer-id)
     ": Search Word"
+    "    "
+    (:propertize "d" face mode-line-buffer-id)
+    ": Choose Dictionary"
     "    "
     (:propertize "o" face mode-line-buffer-id)
     ": Open in Dictionary.app"
@@ -116,6 +153,7 @@ The function takes the WORD as the sole argument."
     ;; Dictionary commands
     (define-key map "q" 'osx-dictionary-quit)
     (define-key map "s" 'osx-dictionary-search-input)
+    (define-key map "d" 'osx-dictionary-select-dictionary)
     (define-key map "o" 'osx-dictionary-open-dictionary.app)
     (define-key map "r" 'osx-dictionary-read-word)
     ;; Misc
@@ -181,7 +219,7 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
       (select-window window))))
 
 (defun osx-dictionary--search (word)
-  "Search WORD."
+  "Search WORD, restricted to `osx-dictionary-current-dictionary' when set."
   ;; Save to history file
   (when osx-dictionary-search-log-file
     (append-to-file
@@ -189,9 +227,14 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
      (expand-file-name osx-dictionary-search-log-file)))
   ;; Search
   (shell-command-to-string
-   (format "%s %s 2>/dev/null"
-           (shell-quote-argument (osx-dictionary-cli-find-or-recompile))
-           (shell-quote-argument word))))
+   (if osx-dictionary-current-dictionary
+       (format "%s -d %s %s 2>/dev/null"
+               (shell-quote-argument (osx-dictionary-cli-find-or-recompile))
+               (shell-quote-argument osx-dictionary-current-dictionary)
+               (shell-quote-argument word))
+     (format "%s %s 2>/dev/null"
+             (shell-quote-argument (osx-dictionary-cli-find-or-recompile))
+             (shell-quote-argument word)))))
 
 (defun osx-dictionary-recompile ()
   "Create or replace the `osx-dictionary-cli' executable using the latest code."
@@ -248,11 +291,32 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
 
 ;;;###autoload
 (defun osx-dictionary-get-all-dictionaries ()
-  "Get all dictionaries as a list."
+  "Get the names of all dictionaries installed in Dictionary.app, as a list."
   (split-string
    (shell-command-to-string
     (format "%s -l" (shell-quote-argument (osx-dictionary-cli-find-or-recompile))))
-   "\n"))
+   "\n" t))
+
+;;;###autoload
+(defun osx-dictionary-select-dictionary (&optional dictionary)
+  "Restrict `osx-dictionary' lookups to DICTIONARY.
+Interactively, prompts among the dictionaries installed in Dictionary.app,
+plus \"All active dictionaries\" to search every dictionary enabled there
+(the default).  The choice is persisted to
+`osx-dictionary-last-dictionary-file' and used by later lookups, including
+in future sessions."
+  (interactive
+   (let* ((all "All active dictionaries")
+          (choice (completing-read
+                   "Dictionary: "
+                   (cons all (osx-dictionary-get-all-dictionaries))
+                   nil t nil nil
+                   (or osx-dictionary-current-dictionary all))))
+     (list (unless (string= choice all) choice))))
+  (setq osx-dictionary-current-dictionary dictionary)
+  (osx-dictionary--save-last-dictionary)
+  (message "osx-dictionary: now searching %s"
+           (or dictionary "all active dictionaries")))
 
 (defun osx-dictionary--region-or-word ()
   "Return region or word around point.
