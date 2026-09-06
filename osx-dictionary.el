@@ -283,11 +283,31 @@ a line of the form \\x01NAME\\x01 -- see `osx-dictionary--insert-search-result'.
              (if args (concat args " ") ""))
            (shell-quote-argument word))))
 
+(defconst osx-dictionary--bullet-indent "  "
+  "Hanging indent given to bullet-marked sub-senses (▸/• lines).
+Applied via the `line-prefix'/`wrap-prefix' text properties -- see
+`osx-dictionary--indent-bullets' -- rather than literal characters, so a
+bullet line that wraps across multiple screen lines keeps the indent on
+every continuation, not just the first.")
+
+(defun osx-dictionary--indent-bullets (start end)
+  "Give each bullet-marked line (▸/•) between START and END a hanging indent.
+`osx-dictionary.m' forces such a line onto its own line but no longer pads
+it with literal spaces, leaving the actual indent to Emacs."
+  (save-excursion
+    (goto-char start)
+    (while (re-search-forward "^[▸•] " end t)
+      (let ((bol (line-beginning-position))
+            (eol (line-end-position)))
+        (put-text-property bol eol 'line-prefix osx-dictionary--bullet-indent)
+        (put-text-property bol eol 'wrap-prefix osx-dictionary--bullet-indent)))))
+
 (defun osx-dictionary--insert-search-result (word)
   "Insert the search result for WORD at point.
 Turns each \\x01NAME\\x01 marker line `osx-dictionary--search' may have
 embedded (one per dictionary that was queried) into a heading naming that
-dictionary, styled with `osx-dictionary-dictionary-name'."
+dictionary, styled with `osx-dictionary-dictionary-name'; and gives each
+bullet-marked line a hanging indent, see `osx-dictionary--indent-bullets'."
   (let ((start (point)))
     (insert (osx-dictionary--search word))
     (save-excursion
@@ -296,7 +316,8 @@ dictionary, styled with `osx-dictionary-dictionary-name'."
         (replace-match
          (concat (propertize (match-string 1) 'font-lock-face 'osx-dictionary-dictionary-name)
                  "\n")
-         nil t)))))
+         nil t)))
+    (osx-dictionary--indent-bullets start (point))))
 
 (defun osx-dictionary-recompile ()
   "Create or replace the `osx-dictionary-cli' executable using the latest code."

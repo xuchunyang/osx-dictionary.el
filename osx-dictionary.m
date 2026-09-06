@@ -158,10 +158,11 @@ void format_and_print(const char* r, int len, const char* word, int arglen) {
   }
   for ( ; i < len; ++i, ++j) {
     if (strncmp(r + i, nr1, 3) == 0 || strncmp(r + i, nr3, 3) == 0) {
+      // Bullet marker (▸/•): force its own line, but leave indentation to
+      // Emacs (see osx-dictionary--indent-bullets) rather than baking in
+      // literal padding, which wouldn't survive the line wrapping.
       if (j && s[j - 1] == '\n') --j;
       else s[j] = '\n';
-      s[++j] = ' ';
-      s[++j] = ' ';
       s[++j] = r[i];
       s[++j] = r[++i];
       s[++j] = r[++i];
