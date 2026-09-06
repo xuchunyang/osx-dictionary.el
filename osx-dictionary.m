@@ -307,12 +307,11 @@ int main(int argc, char *argv[]) {
   NSString* nsword = [NSString stringWithUTF8String:word];
 
   if (restricted) {
-    // Label each block with its source dictionary's name -- but only when
-    // more than one is in play, so a single-dictionary restriction (already
-    // named atop the Emacs buffer) doesn't get the same name repeated right
-    // below it. Emacs turns \x01NAME\x01 lines into a headed section; see
-    // osx-dictionary--insert-search-result.
-    BOOL label = [dicts count] > 1;
+    // Label every block with its source dictionary's name, always -- even
+    // a single -d. Emacs turns \x01NAME\x01 lines into a heading; see
+    // osx-dictionary--insert-search-result. A blank line separates each
+    // dictionary's heading from the previous one's content, except the
+    // very first (nothing to separate it from).
     int printed = 0;
     for (NSUInteger k = 0; k < [dicts count]; k++) {
       NSArray* results = recordsForDictionary((DCSDictionaryRef)dicts[k], nsword);
@@ -321,7 +320,7 @@ int main(int argc, char *argv[]) {
         const char* r = [result UTF8String];
         int len = (int)strlen(r);
         if (len < 1) continue;
-        if (label && first_of_dict) {
+        if (first_of_dict) {
           if (printed > 0) printf("\n\n");
           printf("\x01%s\x01\n", [names[k] UTF8String]);
         } else if (printed > 0) {

@@ -276,9 +276,8 @@ a line of the form \\x01NAME\\x01 -- see `osx-dictionary--insert-search-result'.
 (defun osx-dictionary--insert-search-result (word)
   "Insert the search result for WORD at point.
 Turns each \\x01NAME\\x01 marker line `osx-dictionary--search' may have
-embedded (one per dictionary, when more than one was queried) into a
-heading naming that dictionary, styled like
-`osx-dictionary--current-dictionary-description' atop the buffer."
+embedded (one per dictionary that was queried) into a heading naming that
+dictionary, styled with `osx-dictionary-dictionary-name'."
   (let ((start (point)))
     (insert (osx-dictionary--search word))
     (save-excursion
@@ -286,7 +285,7 @@ heading naming that dictionary, styled like
       (while (re-search-forward "\x01\\([^\x01\n]*\\)\x01\n" nil t)
         (replace-match
          (concat (propertize (match-string 1) 'font-lock-face 'osx-dictionary-dictionary-name)
-                 "\n\n")
+                 "\n")
          nil t)))))
 
 (defun osx-dictionary-recompile ()
@@ -311,11 +310,6 @@ heading naming that dictionary, styled like
                             (funcall osx-dictionary-generate-buffer-name-function word))
         (let ((inhibit-read-only t))
           (erase-buffer)
-          ;; Always show which dictionary(ies) this result comes from -- a
-          ;; single restriction is easy to forget having set.
-          (insert (propertize (osx-dictionary--current-dictionary-description)
-                               'font-lock-face 'osx-dictionary-dictionary-name)
-                  "\n\n")
           (let ((progress-reporter
                  (make-progress-reporter (format "Searching (%s)..." word)
                                          nil nil)))
