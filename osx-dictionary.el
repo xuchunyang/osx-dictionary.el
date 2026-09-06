@@ -439,9 +439,9 @@ name is no longer installed.  Each element of the result is in that same
 form; use `osx-dictionary--entry-real-name' / `-display-name' to project."
   (let ((installed (osx-dictionary-get-all-dictionaries)))
     (if osx-dictionary-allowed-dictionaries
-        (seq-filter (lambda (entry)
-                      (member (osx-dictionary--entry-real-name entry) installed))
-                    osx-dictionary-allowed-dictionaries)
+        (cl-remove-if-not (lambda (entry)
+                            (member (osx-dictionary--entry-real-name entry) installed))
+                          osx-dictionary-allowed-dictionaries)
       installed)))
 
 ;;;###autoload
