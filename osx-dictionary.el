@@ -149,7 +149,7 @@ The function takes the WORD as the sole argument."
     (:propertize "s" face mode-line-buffer-id)
     ": Search Word"
     "    "
-    (:propertize "d" face mode-line-buffer-id)
+    (:propertize "S" face mode-line-buffer-id)
     ": Choose Dictionary"
     "    "
     (:propertize "o" face mode-line-buffer-id)
@@ -177,7 +177,7 @@ The function takes the WORD as the sole argument."
     ;; Dictionary commands
     (define-key map "q" 'osx-dictionary-quit)
     (define-key map "s" 'osx-dictionary-search-input)
-    (define-key map "d" 'osx-dictionary-select-dictionary)
+    (define-key map "S" 'osx-dictionary-select-dictionary)
     (define-key map "o" 'osx-dictionary-open-dictionary.app)
     (define-key map "r" 'osx-dictionary-read-word)
     ;; Misc
@@ -209,10 +209,20 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
   (interactive)
   (shell-command (concat "say " (shell-quote-argument (osx-dictionary--get-current-word)))))
 
+(defvar-local osx-dictionary--current-word nil
+  "The word displayed in this `osx-dictionary-mode' buffer.
+Set by `osx-dictionary--view-result'.")
+
 (defun osx-dictionary--get-current-word ()
-  (save-excursion
-    (goto-char (point-min))
-    (replace-regexp-in-string (rx "·") "" (current-word))))
+  "Return the word displayed in the current `osx-dictionary-mode' buffer.
+Falls back to scanning from the top of the buffer if
+`osx-dictionary--current-word' was never set -- do not rely on this
+fallback, since a labeled result's first line is now a dictionary-name
+heading, not the word."
+  (or osx-dictionary--current-word
+      (save-excursion
+        (goto-char (point-min))
+        (replace-regexp-in-string (rx "·") "" (current-word)))))
 
 (defun osx-dictionary-quit ()
   "Quit osx-dictionary: reselect previously selected buffer."
@@ -316,6 +326,10 @@ dictionary, styled with `osx-dictionary-dictionary-name'."
             (osx-dictionary--insert-search-result word)
             (progress-reporter-done progress-reporter))
           (osx-dictionary--goto-dictionary word)
+          ;; After `osx-dictionary--goto-dictionary', so `osx-dictionary-mode'
+          ;; (which kills buffer-local variables) is already on; setting this
+          ;; any earlier would be wiped out by it turning on for a fresh buffer.
+          (setq osx-dictionary--current-word word)
           (goto-char (point-min))
           (let ((buffer-read-only nil))
             (whitespace-cleanup))))
@@ -371,7 +385,10 @@ preselected, so re-picking it takes an explicit choice like any other --
 there is little point defaulting to what is already in effect, and doing
 so would only make the familiar order unpredictable.  The choice is
 persisted to `osx-dictionary-last-dictionary-file' and used by later
-lookups, including in future sessions."
+lookups, including in future sessions.  Called from within
+`osx-dictionary-mode' (e.g. its \"S\" key), also re-searches the word
+already displayed, so switching dictionary shows that word's entry there
+instead."
   (interactive
    (let* ((all (if osx-dictionary-allowed-dictionaries
                    "All allowed dictionaries"
@@ -384,7 +401,9 @@ lookups, including in future sessions."
   (setq osx-dictionary-current-dictionary dictionary)
   (osx-dictionary--save-last-dictionary)
   (message "osx-dictionary: now searching %s"
-           (osx-dictionary--current-dictionary-description)))
+           (osx-dictionary--current-dictionary-description))
+  (when (derived-mode-p 'osx-dictionary-mode)
+    (osx-dictionary--view-result (osx-dictionary--get-current-word))))
 
 (defun osx-dictionary--region-or-word ()
   "Return region or word around point.
