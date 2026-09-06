@@ -334,20 +334,22 @@ that is no longer installed."
   "Restrict `osx-dictionary' lookups to DICTIONARY.
 Interactively, prompts among the dictionaries installed in Dictionary.app
 (narrowed and ordered by `osx-dictionary-allowed-dictionaries' when set),
-plus an \"All ...\" choice to search every one of them (the default, with
-no restriction, being every dictionary enabled in Dictionary.app).  The
-choice is persisted to `osx-dictionary-last-dictionary-file' and used by
-later lookups, including in future sessions."
+plus a final \"All ...\" choice to search every one of them (the default,
+with no restriction, being every dictionary enabled in Dictionary.app).
+Always prompts in that same fixed order: the current selection is not
+preselected, so re-picking it takes an explicit choice like any other --
+there is little point defaulting to what is already in effect, and doing
+so would only make the familiar order unpredictable.  The choice is
+persisted to `osx-dictionary-last-dictionary-file' and used by later
+lookups, including in future sessions."
   (interactive
    (let* ((all (if osx-dictionary-allowed-dictionaries
                    "All allowed dictionaries"
                  "All active dictionaries"))
-          (names (osx-dictionary--selectable-dictionaries))
-          (default (if (member osx-dictionary-current-dictionary names)
-                       osx-dictionary-current-dictionary
-                     all))
           (choice (completing-read
-                   "Dictionary: " (cons all names) nil t nil nil default)))
+                   "Dictionary: "
+                   (append (osx-dictionary--selectable-dictionaries) (list all))
+                   nil t)))
      (list (unless (string= choice all) choice))))
   (setq osx-dictionary-current-dictionary dictionary)
   (osx-dictionary--save-last-dictionary)
