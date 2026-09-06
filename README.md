@@ -17,7 +17,7 @@ Install from [MELPA](http://melpa.org) with:
 
 * `osx-dictionary-search-word-at-point` Search word at point and display result with buffer
 * `osx-dictionary-search-input` Search input word and display result with buffer
-* `osx-dictionary-select-dictionary` Restrict lookups to one installed dictionary, or back to all active ones; the choice persists across sessions (`osx-dictionary-last-dictionary-file`)
+* `osx-dictionary-select-dictionary` Restrict lookups to one installed dictionary, or back to all active ones; the choice persists across sessions (`osx-dictionary-last-dictionary-file`). The dictionaries offered, and their order, can be narrowed with `osx-dictionary-allowed-dictionaries`
 
 ## Sample configuration
 

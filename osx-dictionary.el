@@ -35,8 +35,9 @@
 ;; Search word around and display result with buffer
 ;; `osx-dictionary-select-dictionary'
 ;; Restrict lookups to one installed dictionary (or back to all active ones);
-;; the choice persists across sessions, and the offered dictionaries can be
-;; narrowed with `osx-dictionary-dictionary-filter'
+;; the choice persists across sessions, and the offered dictionaries -- and
+;; their order in the prompt -- can be narrowed with
+;; `osx-dictionary-allowed-dictionaries'
 ;;
 
 ;;; Installation:
@@ -79,13 +80,13 @@ Set to nil to disable persistence, so the choice only lasts the session."
                  (file :tag "File"))
   :group 'osx-dictionary)
 
-(defcustom osx-dictionary-dictionary-filter nil
-  "Predicate restricting which dictionaries `osx-dictionary-select-dictionary' offers.
-Nil offers every dictionary installed in Dictionary.app (the default).
-Otherwise a function of one argument, a dictionary name string, returning
-non-nil to keep it in the completion list."
+(defcustom osx-dictionary-allowed-dictionaries nil
+  "Dictionaries `osx-dictionary-select-dictionary' offers, and their order.
+Nil offers every dictionary installed in Dictionary.app (the default), in
+whatever order it reports them.  Otherwise a list of dictionary names,
+offered in that order; a name no longer installed is silently dropped."
   :type '(choice (const :tag "Offer every installed dictionary" nil)
-                 (function :tag "Predicate function"))
+                 (repeat :tag "Names, in this order" string))
   :group 'osx-dictionary)
 
 (defvar osx-dictionary-current-dictionary nil
@@ -231,12 +232,12 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
 (defun osx-dictionary--search-dictionary-args ()
   "Return the \"-d NAME ...\" args restricting a search, or nil for none.
 One `-d' per name in `osx-dictionary-current-dictionary' when set; otherwise
-one per name `osx-dictionary--selectable-dictionaries' admits, when
-`osx-dictionary-dictionary-filter' is set; nil when neither applies, so the
-CLI falls back to Dictionary.app's own \"all active dictionaries\" search."
+one per name in `osx-dictionary-allowed-dictionaries', when that is set;
+nil when neither applies, so the CLI falls back to Dictionary.app's own
+\"all active dictionaries\" search."
   (let ((names (cond (osx-dictionary-current-dictionary
                       (list osx-dictionary-current-dictionary))
-                     (osx-dictionary-dictionary-filter
+                     (osx-dictionary-allowed-dictionaries
                       (osx-dictionary--selectable-dictionaries)))))
     (when names
       (mapconcat (lambda (name) (concat "-d " (shell-quote-argument name)))
@@ -319,24 +320,27 @@ CLI falls back to Dictionary.app's own \"all active dictionaries\" search."
    "\n" t))
 
 (defun osx-dictionary--selectable-dictionaries ()
-  "Names `osx-dictionary-select-dictionary' offers, honoring `osx-dictionary-dictionary-filter'."
-  (let ((names (osx-dictionary-get-all-dictionaries)))
-    (if osx-dictionary-dictionary-filter
-        (seq-filter osx-dictionary-dictionary-filter names)
-      names)))
+  "Names `osx-dictionary-select-dictionary' offers, in display order.
+Honors `osx-dictionary-allowed-dictionaries', dropping any name it lists
+that is no longer installed."
+  (let ((installed (osx-dictionary-get-all-dictionaries)))
+    (if osx-dictionary-allowed-dictionaries
+        (seq-filter (lambda (name) (member name installed))
+                    osx-dictionary-allowed-dictionaries)
+      installed)))
 
 ;;;###autoload
 (defun osx-dictionary-select-dictionary (&optional dictionary)
   "Restrict `osx-dictionary' lookups to DICTIONARY.
 Interactively, prompts among the dictionaries installed in Dictionary.app
-(narrowed by `osx-dictionary-dictionary-filter' when set), plus an \"All ...\"
-choice to search every dictionary the filter admits (or, with no filter,
-every dictionary enabled in Dictionary.app -- the default).  The choice is
-persisted to `osx-dictionary-last-dictionary-file' and used by later
-lookups, including in future sessions."
+(narrowed and ordered by `osx-dictionary-allowed-dictionaries' when set),
+plus an \"All ...\" choice to search every one of them (the default, with
+no restriction, being every dictionary enabled in Dictionary.app).  The
+choice is persisted to `osx-dictionary-last-dictionary-file' and used by
+later lookups, including in future sessions."
   (interactive
-   (let* ((all (if osx-dictionary-dictionary-filter
-                   "All dictionaries admitted by the filter"
+   (let* ((all (if osx-dictionary-allowed-dictionaries
+                   "All allowed dictionaries"
                  "All active dictionaries"))
           (names (osx-dictionary--selectable-dictionaries))
           (default (if (member osx-dictionary-current-dictionary names)
@@ -349,8 +353,8 @@ lookups, including in future sessions."
   (osx-dictionary--save-last-dictionary)
   (message "osx-dictionary: now searching %s"
            (or dictionary
-               (if osx-dictionary-dictionary-filter
-                   "all dictionaries admitted by the filter"
+               (if osx-dictionary-allowed-dictionaries
+                   "all allowed dictionaries"
                  "all active dictionaries"))))
 
 (defun osx-dictionary--region-or-word ()
