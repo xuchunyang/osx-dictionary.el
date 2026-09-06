@@ -204,7 +204,12 @@ The function takes the WORD as the sole argument."
 Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
 
   (setq header-line-format osx-dictionary-mode-header-line)
-  (setq font-lock-defaults '(osx-dictionary-mode-font-lock-keywords)))
+  (setq font-lock-defaults '(osx-dictionary-mode-font-lock-keywords))
+  ;; No fringe use here worth keeping (read-only prose, no VC/diagnostic
+  ;; markers) -- and it otherwise threw off the header-line padding above,
+  ;; since header-line-format ignores it just like it ignores margins.
+  (setq-local left-fringe-width 0)
+  (setq-local right-fringe-width 0))
 
 (add-hook 'osx-dictionary-mode-hook #'read-only-mode)
 (add-hook 'osx-dictionary-mode-hook #'visual-line-mode)
