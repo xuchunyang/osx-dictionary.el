@@ -146,11 +146,16 @@ The function takes the WORD as the sole argument."
 
 (defvar osx-dictionary-mode-header-line
   '(
-    ;; `header-line-format' ignores window margins (unlike ordinary buffer
-    ;; text), so pad it to match by hand -- read live via `:eval' rather
-    ;; than a hardcoded width, so it stays correct if `left-margin-width'
-    ;; is ever changed (e.g. by git-gutter's own setup).
-    (:eval (make-string (or left-margin-width 0) ?\s))
+    ;; `header-line-format' ignores both window margins and fringes (unlike
+    ;; ordinary buffer text), so pad it to match by hand -- read live via
+    ;; `:eval' rather than a hardcoded width, so it stays correct if
+    ;; `left-margin-width' is ever changed (e.g. by git-gutter's own
+    ;; setup). The fringe itself is pixel-wide, not column-wide, so it
+    ;; can't be matched exactly with characters; round it to one extra
+    ;; column whenever it's nonzero, which is as close as text can get.
+    (:eval (make-string (+ (or left-margin-width 0)
+                           (if (> (or (car (window-fringes)) 0) 0) 1 0))
+                        ?\s))
     (:propertize "s" face mode-line-buffer-id)
     ": Search Word"
     "    "
