@@ -3,9 +3,10 @@
 // URL: https://github.com/itchyny/dictionary.vim/blob/59a818b62990aecb0ab0a18b596ccd1ef5bb5eb2/autoload/dictionary.m
 // License: MIT License
 // Build: clang -framework CoreServices -framework Foundation osx-dictionary.m -o osx-dictionary-cli
-// Use: osx-dictionary-cli WORD          -- search every dictionary active in Dictionary.app
-//      osx-dictionary-cli -d NAME WORD  -- search only the dictionary named NAME
-//      osx-dictionary-cli -l            -- list installed dictionaries by name (for -d)
+// Use: osx-dictionary-cli WORD                    -- search every dictionary active in Dictionary.app
+//      osx-dictionary-cli -d NAME WORD            -- search only the dictionary named NAME
+//      osx-dictionary-cli -d NAME -d NAME2 ... WORD -- search only the union of the named dictionaries
+//      osx-dictionary-cli -l                      -- list installed dictionaries by name (for -d)
 // ============================================================================
 
 #import <Foundation/Foundation.h>
@@ -30,22 +31,28 @@ NSString* dictionary(char* searchword) {
                                           CFRangeMake(0, [word length]));
 }
 
-// Unique, non-empty definition texts DICT returns for WORD.
-NSArray* recordsForDictionary(DCSDictionaryRef dict, NSString* word) {
-  if (!dict) return [NSArray array];
-  NSArray* records = (NSArray*)DCSCopyRecordsForSearchString(dict, (CFStringRef)word, NULL, NULL);
-  if (!records) return [NSArray array];
-
+// Unique, non-empty definition texts the union of DICTS returns for WORD.
+NSArray* recordsForDictionaries(NSArray* dicts, NSString* word) {
   NSMutableArray* results = [NSMutableArray array];
   NSMutableSet* seen = [NSMutableSet set];
-  for (id record in records) {
-    NSString* data = (NSString*)DCSRecordCopyData((CFTypeRef)record, 3);
-    if (data && [data length] > 0 && ![seen containsObject:data]) {
-      [seen addObject:data];
-      [results addObject:data];
+  for (id dict in dicts) {
+    if (!dict) continue;
+    NSArray* records = (NSArray*)DCSCopyRecordsForSearchString((DCSDictionaryRef)dict, (CFStringRef)word, NULL, NULL);
+    if (!records) continue;
+    for (id record in records) {
+      NSString* data = (NSString*)DCSRecordCopyData((CFTypeRef)record, 3);
+      if (data && [data length] > 0 && ![seen containsObject:data]) {
+        [seen addObject:data];
+        [results addObject:data];
+      }
     }
   }
   return results;
+}
+
+NSArray* recordsForDictionary(DCSDictionaryRef dict, NSString* word) {
+  if (!dict) return [NSArray array];
+  return recordsForDictionaries(@[(id)dict], word);
 }
 
 NSArray* dictionaryAll(NSString* word) {
@@ -277,24 +284,23 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  char* word;
-  BOOL restricted = NO;
-  DCSDictionaryRef restrictTo = NULL;
-  if (strcmp(argv[1], "-d") == 0) {
-    if (argc < 4) return 0;
-    restricted = YES;
-    restrictTo = dictionaryNamed(argv[2]);
-    word = argv[3];
-  } else {
-    word = argv[1];
+  NSMutableArray* restrictTo = [NSMutableArray array];
+  int i = 1;
+  while (i + 1 < argc && strcmp(argv[i], "-d") == 0) {
+    DCSDictionaryRef dict = dictionaryNamed(argv[i + 1]);
+    if (dict) [restrictTo addObject:(id)dict];
+    i += 2;
   }
+  BOOL restricted = i > 1;
+  if (i >= argc) return 0;  // no word given (only -d NAME pairs, or nothing at all)
+  char* word = argv[i];
 
   int arglen = strlen(word);
   if (arglen == 0) return 0;
 
   NSString* nsword = [NSString stringWithUTF8String:word];
   NSArray* results = restricted
-      ? recordsForDictionary(restrictTo, nsword)
+      ? recordsForDictionaries(restrictTo, nsword)
       : dictionaryAll(nsword);
 
   if ([results count] == 0) {

@@ -228,8 +228,22 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
         (switch-to-buffer-other-window buffer)
       (select-window window))))
 
+(defun osx-dictionary--search-dictionary-args ()
+  "Return the \"-d NAME ...\" args restricting a search, or nil for none.
+One `-d' per name in `osx-dictionary-current-dictionary' when set; otherwise
+one per name `osx-dictionary--selectable-dictionaries' admits, when
+`osx-dictionary-dictionary-filter' is set; nil when neither applies, so the
+CLI falls back to Dictionary.app's own \"all active dictionaries\" search."
+  (let ((names (cond (osx-dictionary-current-dictionary
+                      (list osx-dictionary-current-dictionary))
+                     (osx-dictionary-dictionary-filter
+                      (osx-dictionary--selectable-dictionaries)))))
+    (when names
+      (mapconcat (lambda (name) (concat "-d " (shell-quote-argument name)))
+                 names " "))))
+
 (defun osx-dictionary--search (word)
-  "Search WORD, restricted to `osx-dictionary-current-dictionary' when set."
+  "Search WORD, restricted per `osx-dictionary--search-dictionary-args'."
   ;; Save to history file
   (when osx-dictionary-search-log-file
     (append-to-file
@@ -237,14 +251,11 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
      (expand-file-name osx-dictionary-search-log-file)))
   ;; Search
   (shell-command-to-string
-   (if osx-dictionary-current-dictionary
-       (format "%s -d %s %s 2>/dev/null"
-               (shell-quote-argument (osx-dictionary-cli-find-or-recompile))
-               (shell-quote-argument osx-dictionary-current-dictionary)
-               (shell-quote-argument word))
-     (format "%s %s 2>/dev/null"
-             (shell-quote-argument (osx-dictionary-cli-find-or-recompile))
-             (shell-quote-argument word)))))
+   (format "%s %s%s 2>/dev/null"
+           (shell-quote-argument (osx-dictionary-cli-find-or-recompile))
+           (let ((args (osx-dictionary--search-dictionary-args)))
+             (if args (concat args " ") ""))
+           (shell-quote-argument word))))
 
 (defun osx-dictionary-recompile ()
   "Create or replace the `osx-dictionary-cli' executable using the latest code."
@@ -318,12 +329,15 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
 (defun osx-dictionary-select-dictionary (&optional dictionary)
   "Restrict `osx-dictionary' lookups to DICTIONARY.
 Interactively, prompts among the dictionaries installed in Dictionary.app
-(narrowed by `osx-dictionary-dictionary-filter' when set), plus \"All active
-dictionaries\" to search every dictionary enabled there (the default).  The
-choice is persisted to `osx-dictionary-last-dictionary-file' and used by
-later lookups, including in future sessions."
+(narrowed by `osx-dictionary-dictionary-filter' when set), plus an \"All ...\"
+choice to search every dictionary the filter admits (or, with no filter,
+every dictionary enabled in Dictionary.app -- the default).  The choice is
+persisted to `osx-dictionary-last-dictionary-file' and used by later
+lookups, including in future sessions."
   (interactive
-   (let* ((all "All active dictionaries")
+   (let* ((all (if osx-dictionary-dictionary-filter
+                   "All dictionaries admitted by the filter"
+                 "All active dictionaries"))
           (names (osx-dictionary--selectable-dictionaries))
           (default (if (member osx-dictionary-current-dictionary names)
                        osx-dictionary-current-dictionary
@@ -334,7 +348,10 @@ later lookups, including in future sessions."
   (setq osx-dictionary-current-dictionary dictionary)
   (osx-dictionary--save-last-dictionary)
   (message "osx-dictionary: now searching %s"
-           (or dictionary "all active dictionaries")))
+           (or dictionary
+               (if osx-dictionary-dictionary-filter
+                   "all dictionaries admitted by the filter"
+                 "all active dictionaries"))))
 
 (defun osx-dictionary--region-or-word ()
   "Return region or word around point.
