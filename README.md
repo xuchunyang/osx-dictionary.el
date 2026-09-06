@@ -41,9 +41,12 @@ Inside a result buffer:
 ;; (global-set-key (kbd "C-c i") 'osx-dictionary-search-input)
 
 ;; Narrow down which dictionaries `osx-dictionary-select-dictionary' offers,
-;; and in what order:
+;; and in what order. An entry can be just the real name, or a (REAL . DISPLAY)
+;; cons when the real name is unwieldy -- DISPLAY is shown everywhere instead:
 ;; (setq osx-dictionary-allowed-dictionaries
-;;       '("New Oxford American Dictionary" "Oxford Dictionary of English"))
+;;       '("New Oxford American Dictionary"
+;;         "Oxford Dictionary of English"
+;;         ("Dizionario italiano da un affiliato di Oxford University Press" . "Dizionario italiano")))
 
 ;; Work with popwin-el (https://github.com/m2ym/popwin-el)
 ;; (push "*osx-dictionary*" popwin:special-display-config)

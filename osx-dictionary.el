@@ -83,11 +83,38 @@ Set to nil to disable persistence, so the choice only lasts the session."
 (defcustom osx-dictionary-allowed-dictionaries nil
   "Dictionaries `osx-dictionary-select-dictionary' offers, and their order.
 Nil offers every dictionary installed in Dictionary.app (the default), in
-whatever order it reports them.  Otherwise a list of dictionary names,
-offered in that order; a name no longer installed is silently dropped."
+whatever order it reports them.  Otherwise a list of entries, offered in
+that order; an entry whose real name is no longer installed is silently
+dropped.  Each entry is either:
+
+- a string, the dictionary's real name as Dictionary.app reports it, or
+- a cons (REAL-NAME . DISPLAY-NAME), when REAL-NAME is unwieldy to read.
+  DISPLAY-NAME is shown instead everywhere a name would otherwise appear
+  (the selection prompt, a result's heading, ...); REAL-NAME is still what
+  is actually matched against Dictionary.app and passed to it."
   :type '(choice (const :tag "Offer every installed dictionary" nil)
-                 (repeat :tag "Names, in this order" string))
+                 (repeat :tag "Entries, in this order"
+                         (choice (string :tag "Name")
+                                 (cons :tag "Name with a shorter display alias"
+                                       (string :tag "Real name")
+                                       (string :tag "Display name")))))
   :group 'osx-dictionary)
+
+(defun osx-dictionary--entry-real-name (entry)
+  "Real, installed-dictionary name for ENTRY, an `osx-dictionary-allowed-dictionaries' element."
+  (if (consp entry) (car entry) entry))
+
+(defun osx-dictionary--entry-display-name (entry)
+  "Name to show the user for ENTRY, an `osx-dictionary-allowed-dictionaries' element."
+  (if (consp entry) (cdr entry) entry))
+
+(defun osx-dictionary--display-name-for (real-name)
+  "Display name `osx-dictionary-allowed-dictionaries' aliases REAL-NAME to.
+Falls back to REAL-NAME itself when it isn't aliased there."
+  (or (cl-loop for entry in osx-dictionary-allowed-dictionaries
+               when (and (consp entry) (equal (car entry) real-name))
+               return (cdr entry))
+      real-name))
 
 (defvar osx-dictionary-current-dictionary nil
   "Name of the dictionary `osx-dictionary' restricts lookups to.
@@ -103,7 +130,8 @@ Falls back to `bold' if `org-level-1' is not defined (Org not loaded)."
 
 (defun osx-dictionary--current-dictionary-description ()
   "Human-readable description of what `osx-dictionary--search' currently restricts to."
-  (or osx-dictionary-current-dictionary
+  (or (and osx-dictionary-current-dictionary
+           (osx-dictionary--display-name-for osx-dictionary-current-dictionary))
       (if osx-dictionary-allowed-dictionaries
           "All allowed dictionaries"
         "All active dictionaries")))
@@ -276,7 +304,8 @@ nil when neither applies, so the CLI falls back to Dictionary.app's own
   (let ((names (cond (osx-dictionary-current-dictionary
                       (list osx-dictionary-current-dictionary))
                      (osx-dictionary-allowed-dictionaries
-                      (osx-dictionary--selectable-dictionaries)))))
+                      (mapcar #'osx-dictionary--entry-real-name
+                              (osx-dictionary--selectable-dictionaries))))))
     (when names
       (mapconcat (lambda (name) (concat "-d " (shell-quote-argument name)))
                  names " "))))
@@ -321,15 +350,18 @@ it with literal spaces, leaving the actual indent to Emacs."
   "Insert the search result for WORD at point.
 Turns each \\x01NAME\\x01 marker line `osx-dictionary--search' may have
 embedded (one per dictionary that was queried) into a heading naming that
-dictionary, styled with `osx-dictionary-dictionary-name'; and gives each
-bullet-marked line a hanging indent, see `osx-dictionary--indent-bullets'."
+dictionary -- via `osx-dictionary--display-name-for', so an alias set in
+`osx-dictionary-allowed-dictionaries' is shown there too -- styled with
+`osx-dictionary-dictionary-name'; and gives each bullet-marked line a
+hanging indent, see `osx-dictionary--indent-bullets'."
   (let ((start (point)))
     (insert (osx-dictionary--search word))
     (save-excursion
       (goto-char start)
       (while (re-search-forward "\x01\\([^\x01\n]*\\)\x01\n" nil t)
         (replace-match
-         (concat (propertize (match-string 1) 'font-lock-face 'osx-dictionary-dictionary-name)
+         (concat (propertize (osx-dictionary--display-name-for (match-string 1))
+                              'font-lock-face 'osx-dictionary-dictionary-name)
                  "\n")
          nil t)))
     (osx-dictionary--indent-bullets start (point))))
@@ -400,12 +432,15 @@ bullet-marked line a hanging indent, see `osx-dictionary--indent-bullets'."
    "\n" t))
 
 (defun osx-dictionary--selectable-dictionaries ()
-  "Names `osx-dictionary-select-dictionary' offers, in display order.
-Honors `osx-dictionary-allowed-dictionaries', dropping any name it lists
-that is no longer installed."
+  "Entries `osx-dictionary-select-dictionary' offers, in display order.
+Honors `osx-dictionary-allowed-dictionaries' (plain name strings, or (REAL
+. DISPLAY) conses -- see its docstring), dropping any entry whose real
+name is no longer installed.  Each element of the result is in that same
+form; use `osx-dictionary--entry-real-name' / `-display-name' to project."
   (let ((installed (osx-dictionary-get-all-dictionaries)))
     (if osx-dictionary-allowed-dictionaries
-        (seq-filter (lambda (name) (member name installed))
+        (seq-filter (lambda (entry)
+                      (member (osx-dictionary--entry-real-name entry) installed))
                     osx-dictionary-allowed-dictionaries)
       installed)))
 
@@ -429,11 +464,18 @@ instead."
    (let* ((all (if osx-dictionary-allowed-dictionaries
                    "All allowed dictionaries"
                  "All active dictionaries"))
+          ;; completing-read only ever returns the DISPLAY string typed/picked;
+          ;; this maps it back to the real name actually searched.
+          (display-to-real
+           (mapcar (lambda (entry)
+                     (cons (osx-dictionary--entry-display-name entry)
+                           (osx-dictionary--entry-real-name entry)))
+                   (osx-dictionary--selectable-dictionaries)))
           (choice (completing-read
                    "Dictionary: "
-                   (append (osx-dictionary--selectable-dictionaries) (list all))
+                   (append (mapcar #'car display-to-real) (list all))
                    nil t)))
-     (list (unless (string= choice all) choice))))
+     (list (unless (string= choice all) (cdr (assoc choice display-to-real))))))
   (setq osx-dictionary-current-dictionary dictionary)
   (osx-dictionary--save-last-dictionary)
   (message "osx-dictionary: now searching %s"
