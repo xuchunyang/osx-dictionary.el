@@ -157,10 +157,10 @@ The function takes the WORD as the sole argument."
                            (if (> (or (car (window-fringes)) 0) 0) 1 0))
                         ?\s))
     (:propertize "s" face mode-line-buffer-id)
-    ": Search Word"
+    ": Search word"
     "    "
     (:propertize "S" face mode-line-buffer-id)
-    ": Choose Dictionary"
+    ": Select dictionary"
     "    "
     (:propertize "o" face mode-line-buffer-id)
     ": Open in Dictionary.app"
