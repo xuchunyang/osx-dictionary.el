@@ -95,6 +95,19 @@ Nil means search every dictionary enabled in Dictionary.app (the default).
 Set via `osx-dictionary-select-dictionary', which also persists it to
 `osx-dictionary-last-dictionary-file'.")
 
+(defface osx-dictionary-dictionary-name
+  '((t :inherit (org-level-1 bold)))
+  "Face for the heading naming the current dictionary restriction.
+Falls back to `bold' if `org-level-1' is not defined (Org not loaded)."
+  :group 'osx-dictionary)
+
+(defun osx-dictionary--current-dictionary-description ()
+  "Human-readable description of what `osx-dictionary--search' currently restricts to."
+  (or osx-dictionary-current-dictionary
+      (if osx-dictionary-allowed-dictionaries
+          "All allowed dictionaries"
+        "All active dictionaries")))
+
 (defun osx-dictionary--load-last-dictionary ()
   "Restore `osx-dictionary-current-dictionary' from `osx-dictionary-last-dictionary-file'."
   (when (and osx-dictionary-last-dictionary-file
@@ -280,6 +293,11 @@ nil when neither applies, so the CLI falls back to Dictionary.app's own
                             (funcall osx-dictionary-generate-buffer-name-function word))
         (let ((inhibit-read-only t))
           (erase-buffer)
+          ;; Always show which dictionary(ies) this result comes from -- a
+          ;; single restriction is easy to forget having set.
+          (insert (propertize (osx-dictionary--current-dictionary-description)
+                               'font-lock-face 'osx-dictionary-dictionary-name)
+                  "\n\n")
           (let ((progress-reporter
                  (make-progress-reporter (format "Searching (%s)..." word)
                                          nil nil)))
@@ -354,10 +372,7 @@ lookups, including in future sessions."
   (setq osx-dictionary-current-dictionary dictionary)
   (osx-dictionary--save-last-dictionary)
   (message "osx-dictionary: now searching %s"
-           (or dictionary
-               (if osx-dictionary-allowed-dictionaries
-                   "all allowed dictionaries"
-                 "all active dictionaries"))))
+           (osx-dictionary--current-dictionary-description)))
 
 (defun osx-dictionary--region-or-word ()
   "Return region or word around point.
