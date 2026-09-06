@@ -17,6 +17,17 @@ Install from [MELPA](http://melpa.org) with:
 
 * `osx-dictionary-search-word-at-point` Search word at point and display result with buffer
 * `osx-dictionary-search-input` Search input word and display result with buffer
+* `osx-dictionary-select-dictionary` Restrict lookups to one installed dictionary, or to a list you configure via `osx-dictionary-allowed-dictionaries` (or back to every dictionary active in Dictionary.app). The choice persists across sessions (`osx-dictionary-last-dictionary-file`). When more than one dictionary ends up being searched, each block of results is labeled with the dictionary it came from. Called again from inside a result buffer, it also re-searches the word already shown there, so switching dictionaries immediately shows that word's entry from the new one.
+
+Inside a result buffer:
+
+| Key | Action |
+|-----|--------|
+| `s` | search another word |
+| `S` | select a different dictionary (re-searches the current word) |
+| `o` | open the current word in Dictionary.app |
+| `r` | read the current word aloud |
+| `q` | quit |
 
 ## Sample configuration
 
@@ -26,7 +37,16 @@ Install from [MELPA](http://melpa.org) with:
 
 ;; Key bindings
 (global-set-key (kbd "C-c d") 'osx-dictionary-search-word-at-point)
+;; (global-set-key (kbd "C-c D") 'osx-dictionary-select-dictionary)
 ;; (global-set-key (kbd "C-c i") 'osx-dictionary-search-input)
+
+;; Narrow down which dictionaries `osx-dictionary-select-dictionary' offers,
+;; and in what order. An entry can be just the real name, or a (REAL . DISPLAY)
+;; cons when the real name is unwieldy -- DISPLAY is shown everywhere instead:
+;; (setq osx-dictionary-allowed-dictionaries
+;;       '("New Oxford American Dictionary"
+;;         "Oxford Dictionary of English"
+;;         ("Dizionario italiano da un affiliato di Oxford University Press" . "Dizionario italiano")))
 
 ;; Work with popwin-el (https://github.com/m2ym/popwin-el)
 ;; (push "*osx-dictionary*" popwin:special-display-config)
@@ -47,3 +67,4 @@ for more info.
 ## News
 
 - 2016/11 The option `osx-dictionary-dictionary-choice` was removed AFTER v0.2.2 for macOS Sierra support.
+- Dictionary selection is back (`osx-dictionary-select-dictionary`), implemented differently from the removed option: it resolves the chosen dictionary via `DCSCopyAvailableDictionaries`/`DCSDictionaryGetName` rather than reconstructing a `DCSDictionaryRef` from the `com.apple.DictionaryServices` default (the mechanism that broke on Sierra).

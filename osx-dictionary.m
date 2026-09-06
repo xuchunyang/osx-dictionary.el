@@ -3,7 +3,11 @@
 // URL: https://github.com/itchyny/dictionary.vim/blob/59a818b62990aecb0ab0a18b596ccd1ef5bb5eb2/autoload/dictionary.m
 // License: MIT License
 // Build: clang -framework CoreServices -framework Foundation osx-dictionary.m -o osx-dictionary-cli
-// Use: osx-dictionary-cli WORD
+// Use: osx-dictionary-cli WORD                    -- search every dictionary active in Dictionary.app
+//      osx-dictionary-cli -d NAME WORD            -- search only the dictionary named NAME
+//      osx-dictionary-cli -d NAME -d NAME2 ... WORD -- search only the union of the named dictionaries,
+//                                                     each block labeled \x01NAME\x01 on its own line
+//      osx-dictionary-cli -l                      -- list installed dictionaries by name (for -d)
 // ============================================================================
 
 #import <Foundation/Foundation.h>
@@ -19,6 +23,8 @@
 extern DCSDictionaryRef DCSGetDefaultDictionary(void);
 extern CFArrayRef DCSCopyRecordsForSearchString(DCSDictionaryRef dict, CFStringRef string, void*, void*);
 extern CFStringRef DCSRecordCopyData(CFTypeRef record, long version);
+extern CFArrayRef DCSCopyAvailableDictionaries(void);
+extern CFStringRef DCSDictionaryGetName(DCSDictionaryRef dictionary);
 
 NSString* dictionary(char* searchword) {
   NSString* word = [NSString stringWithUTF8String:searchword];
@@ -26,25 +32,52 @@ NSString* dictionary(char* searchword) {
                                           CFRangeMake(0, [word length]));
 }
 
-NSArray* dictionaryAll(char* searchword) {
-  NSString* word = [NSString stringWithUTF8String:searchword];
-  DCSDictionaryRef defaultDict = DCSGetDefaultDictionary();
-  if (!defaultDict) return [NSArray array];
-
-  NSArray* records = (NSArray*)DCSCopyRecordsForSearchString(
-      defaultDict, (CFStringRef)word, NULL, NULL);
-  if (!records) return [NSArray array];
-
+// Unique, non-empty definition texts the union of DICTS returns for WORD.
+NSArray* recordsForDictionaries(NSArray* dicts, NSString* word) {
   NSMutableArray* results = [NSMutableArray array];
   NSMutableSet* seen = [NSMutableSet set];
-  for (id record in records) {
-    NSString* data = (NSString*)DCSRecordCopyData((CFTypeRef)record, 3);
-    if (data && [data length] > 0 && ![seen containsObject:data]) {
-      [seen addObject:data];
-      [results addObject:data];
+  for (id dict in dicts) {
+    if (!dict) continue;
+    NSArray* records = (NSArray*)DCSCopyRecordsForSearchString((DCSDictionaryRef)dict, (CFStringRef)word, NULL, NULL);
+    if (!records) continue;
+    for (id record in records) {
+      NSString* data = (NSString*)DCSRecordCopyData((CFTypeRef)record, 3);
+      if (data && [data length] > 0 && ![seen containsObject:data]) {
+        [seen addObject:data];
+        [results addObject:data];
+      }
     }
   }
   return results;
+}
+
+NSArray* recordsForDictionary(DCSDictionaryRef dict, NSString* word) {
+  if (!dict) return [NSArray array];
+  return recordsForDictionaries(@[(id)dict], word);
+}
+
+NSArray* dictionaryAll(NSString* word) {
+  return recordsForDictionary(DCSGetDefaultDictionary(), word);
+}
+
+// Installed dictionary named NAME, or NULL. Dictionary objects come straight
+// from DCSCopyAvailableDictionaries, never reconstructed via DCSDictionaryCreate
+// (that path -- reading the active-dictionaries default + rebuilding a ref from
+// its file URL -- is what broke on Sierra; see git history).
+DCSDictionaryRef dictionaryNamed(const char* name) {
+  NSString* target = [NSString stringWithUTF8String:name];
+  for (id dict in (NSArray*)DCSCopyAvailableDictionaries()) {
+    if ([(NSString*)DCSDictionaryGetName((DCSDictionaryRef)dict) isEqualToString:target])
+      return (DCSDictionaryRef)dict;
+  }
+  return NULL;
+}
+
+void listDictionaries(void) {
+  for (id dict in (NSArray*)DCSCopyAvailableDictionaries()) {
+    NSString* name = (NSString*)DCSDictionaryGetName((DCSDictionaryRef)dict);
+    if (name) printf("%s\n", [name UTF8String]);
+  }
 }
 
 NSString* suggest(char* w) {
@@ -125,10 +158,11 @@ void format_and_print(const char* r, int len, const char* word, int arglen) {
   }
   for ( ; i < len; ++i, ++j) {
     if (strncmp(r + i, nr1, 3) == 0 || strncmp(r + i, nr3, 3) == 0) {
+      // Bullet marker (▸/•): force its own line, but leave indentation to
+      // Emacs (see osx-dictionary--indent-bullets) rather than baking in
+      // literal padding, which wouldn't survive the line wrapping.
       if (j && s[j - 1] == '\n') --j;
       else s[j] = '\n';
-      s[++j] = ' ';
-      s[++j] = ' ';
       s[++j] = r[i];
       s[++j] = r[++i];
       s[++j] = r[++i];
@@ -246,28 +280,82 @@ void format_and_print(const char* r, int len, const char* word, int arglen) {
 
 int main(int argc, char *argv[]) {
   if (argc < 2) return 0;
-  int arglen = strlen(argv[1]);
+
+  if (strcmp(argv[1], "-l") == 0) {
+    listDictionaries();
+    return 0;
+  }
+
+  // Parallel arrays: names[k] is the display name of dicts[k].
+  NSMutableArray* names = [NSMutableArray array];
+  NSMutableArray* dicts = [NSMutableArray array];
+  int i = 1;
+  while (i + 1 < argc && strcmp(argv[i], "-d") == 0) {
+    DCSDictionaryRef dict = dictionaryNamed(argv[i + 1]);
+    if (dict) {
+      [names addObject:[NSString stringWithUTF8String:argv[i + 1]]];
+      [dicts addObject:(id)dict];
+    }
+    i += 2;
+  }
+  BOOL restricted = i > 1;
+  if (i >= argc) return 0;  // no word given (only -d NAME pairs, or nothing at all)
+  char* word = argv[i];
+
+  int arglen = strlen(word);
   if (arglen == 0) return 0;
 
-  NSArray* results = dictionaryAll(argv[1]);
+  NSString* nsword = [NSString stringWithUTF8String:word];
+
+  if (restricted) {
+    // Label every block with its source dictionary's name, always -- even
+    // a single -d. Emacs turns \x01NAME\x01 lines into a heading; see
+    // osx-dictionary--insert-search-result. A blank line separates each
+    // dictionary's heading from the previous one's content, except the
+    // very first (nothing to separate it from).
+    int printed = 0;
+    for (NSUInteger k = 0; k < [dicts count]; k++) {
+      NSArray* results = recordsForDictionary((DCSDictionaryRef)dicts[k], nsword);
+      BOOL first_of_dict = YES;
+      for (NSString* result in results) {
+        const char* r = [result UTF8String];
+        int len = (int)strlen(r);
+        if (len < 1) continue;
+        if (first_of_dict) {
+          if (printed > 0) printf("\n\n");
+          printf("\x01%s\x01\n", [names[k] UTF8String]);
+        } else if (printed > 0) {
+          printf("\n--------------------\n");
+        }
+        first_of_dict = NO;
+        format_and_print(r, len, word, arglen);
+        printed++;
+      }
+    }
+    // Nothing found in the restricted set: don't fall back to the fuzzy
+    // `look'-based suggestion below, which ignores the restriction.
+    return 0;
+  }
+
+  NSArray* results = dictionaryAll(nsword);
 
   if ([results count] == 0) {
     int i, l;
-    if ((l = strlen(argv[1])) > 100) return 0;
+    if ((l = strlen(word)) > 100) return 0;
     for (i = 0; i < l; ++i)
-      if (!isalpha(argv[1][i])) return 0;
+      if (!isalpha(word[i])) return 0;
     NSString* result;
-    if ((result = suggest(argv[1])) == nil) {
+    if ((result = suggest(word)) == nil) {
       if (l < 3) return 0;
       int j; char s[l * 3 + 2]; s[0] = '^';
       for (i = j = 0; i < l; ++i) {
-        s[++j] = argv[1][i]; s[++j] = '.'; s[++j] = '*';
+        s[++j] = word[i]; s[++j] = '.'; s[++j] = '*';
       }
       s[++j] = '\0';
       if ((result = suggest(s)) == nil) return 0;
     }
     const char* r = [result UTF8String];
-    format_and_print(r, (int)strlen(r), argv[1], arglen);
+    format_and_print(r, (int)strlen(r), word, arglen);
     return 0;
   }
 
@@ -277,7 +365,7 @@ int main(int argc, char *argv[]) {
     int len = (int)strlen(r);
     if (len < 1) continue;
     if (printed > 0) printf("\n--------------------\n");
-    format_and_print(r, len, argv[1], arglen);
+    format_and_print(r, len, word, arglen);
     printed++;
   }
   return 0;

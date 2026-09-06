@@ -33,6 +33,11 @@
 ;; Search input word and display result with buffer
 ;; `osx-dictionary-search-word-at-point'
 ;; Search word around and display result with buffer
+;; `osx-dictionary-select-dictionary'
+;; Restrict lookups to one installed dictionary (or back to all active ones);
+;; the choice persists across sessions, and the offered dictionaries -- and
+;; their order in the prompt -- can be narrowed with
+;; `osx-dictionary-allowed-dictionaries'
 ;;
 
 ;;; Installation:
@@ -67,6 +72,87 @@ for more info."
   :type 'string
   :group 'osx-dictionary)
 
+(defcustom osx-dictionary-last-dictionary-file
+  (locate-user-emacs-file "osx-dictionary-last-dictionary")
+  "File used to persist the dictionary chosen by `osx-dictionary-select-dictionary'.
+Set to nil to disable persistence, so the choice only lasts the session."
+  :type '(choice (const :tag "Don't persist across sessions" nil)
+                 (file :tag "File"))
+  :group 'osx-dictionary)
+
+(defcustom osx-dictionary-allowed-dictionaries nil
+  "Dictionaries `osx-dictionary-select-dictionary' offers, and their order.
+Nil offers every dictionary installed in Dictionary.app (the default), in
+whatever order it reports them.  Otherwise a list of entries, offered in
+that order; an entry whose real name is no longer installed is silently
+dropped.  Each entry is either:
+
+- a string, the dictionary's real name as Dictionary.app reports it, or
+- a cons (REAL-NAME . DISPLAY-NAME), when REAL-NAME is unwieldy to read.
+  DISPLAY-NAME is shown instead everywhere a name would otherwise appear
+  (the selection prompt, a result's heading, ...); REAL-NAME is still what
+  is actually matched against Dictionary.app and passed to it."
+  :type '(choice (const :tag "Offer every installed dictionary" nil)
+                 (repeat :tag "Entries, in this order"
+                         (choice (string :tag "Name")
+                                 (cons :tag "Name with a shorter display alias"
+                                       (string :tag "Real name")
+                                       (string :tag "Display name")))))
+  :group 'osx-dictionary)
+
+(defun osx-dictionary--entry-real-name (entry)
+  "Real, installed-dictionary name for ENTRY, an `osx-dictionary-allowed-dictionaries' element."
+  (if (consp entry) (car entry) entry))
+
+(defun osx-dictionary--entry-display-name (entry)
+  "Name to show the user for ENTRY, an `osx-dictionary-allowed-dictionaries' element."
+  (if (consp entry) (cdr entry) entry))
+
+(defun osx-dictionary--display-name-for (real-name)
+  "Display name `osx-dictionary-allowed-dictionaries' aliases REAL-NAME to.
+Falls back to REAL-NAME itself when it isn't aliased there."
+  (or (cl-loop for entry in osx-dictionary-allowed-dictionaries
+               when (and (consp entry) (equal (car entry) real-name))
+               return (cdr entry))
+      real-name))
+
+(defvar osx-dictionary-current-dictionary nil
+  "Name of the dictionary `osx-dictionary' restricts lookups to.
+Nil means search every dictionary enabled in Dictionary.app (the default).
+Set via `osx-dictionary-select-dictionary', which also persists it to
+`osx-dictionary-last-dictionary-file'.")
+
+(defface osx-dictionary-dictionary-name
+  '((t :inherit (org-level-1 bold)))
+  "Face for the heading naming the current dictionary restriction.
+Falls back to `bold' if `org-level-1' is not defined (Org not loaded)."
+  :group 'osx-dictionary)
+
+(defun osx-dictionary--current-dictionary-description ()
+  "Human-readable description of what `osx-dictionary--search' currently restricts to."
+  (or (and osx-dictionary-current-dictionary
+           (osx-dictionary--display-name-for osx-dictionary-current-dictionary))
+      (if osx-dictionary-allowed-dictionaries
+          "All allowed dictionaries"
+        "All active dictionaries")))
+
+(defun osx-dictionary--load-last-dictionary ()
+  "Restore `osx-dictionary-current-dictionary' from `osx-dictionary-last-dictionary-file'."
+  (when (and osx-dictionary-last-dictionary-file
+             (file-exists-p osx-dictionary-last-dictionary-file))
+    (setq osx-dictionary-current-dictionary
+          (with-temp-buffer
+            (insert-file-contents osx-dictionary-last-dictionary-file)
+            (ignore-errors (read (current-buffer)))))))
+
+(defun osx-dictionary--save-last-dictionary ()
+  "Persist `osx-dictionary-current-dictionary' to `osx-dictionary-last-dictionary-file'."
+  (when osx-dictionary-last-dictionary-file
+    (with-temp-file osx-dictionary-last-dictionary-file
+      (prin1 osx-dictionary-current-dictionary (current-buffer)))))
+
+(osx-dictionary--load-last-dictionary)
+
 (defconst osx-dictionary-cli "osx-dictionary-cli"
   "The name of executable file compiled from \"osx-dictionary.m\".")
 
@@ -88,8 +174,21 @@ The function takes the WORD as the sole argument."
 
 (defvar osx-dictionary-mode-header-line
   '(
+    ;; `header-line-format' ignores both window margins and fringes (unlike
+    ;; ordinary buffer text), so pad it to match by hand -- read live via
+    ;; `:eval' rather than a hardcoded width, so it stays correct if
+    ;; `left-margin-width' is ever changed (e.g. by git-gutter's own
+    ;; setup). The fringe itself is pixel-wide, not column-wide, so it
+    ;; can't be matched exactly with characters; round it to one extra
+    ;; column whenever it's nonzero, which is as close as text can get.
+    (:eval (make-string (+ (or left-margin-width 0)
+                           (if (> (or (car (window-fringes)) 0) 0) 1 0))
+                        ?\s))
     (:propertize "s" face mode-line-buffer-id)
-    ": Search Word"
+    ": Search word"
+    "    "
+    (:propertize "S" face mode-line-buffer-id)
+    ": Select dictionary"
     "    "
     (:propertize "o" face mode-line-buffer-id)
     ": Open in Dictionary.app"
@@ -116,6 +215,7 @@ The function takes the WORD as the sole argument."
     ;; Dictionary commands
     (define-key map "q" 'osx-dictionary-quit)
     (define-key map "s" 'osx-dictionary-search-input)
+    (define-key map "S" 'osx-dictionary-select-dictionary)
     (define-key map "o" 'osx-dictionary-open-dictionary.app)
     (define-key map "r" 'osx-dictionary-read-word)
     ;; Misc
@@ -132,7 +232,12 @@ The function takes the WORD as the sole argument."
 Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
 
   (setq header-line-format osx-dictionary-mode-header-line)
-  (setq font-lock-defaults '(osx-dictionary-mode-font-lock-keywords)))
+  (setq font-lock-defaults '(osx-dictionary-mode-font-lock-keywords))
+  ;; No fringe use here worth keeping (read-only prose, no VC/diagnostic
+  ;; markers) -- and it otherwise threw off the header-line padding above,
+  ;; since header-line-format ignores it just like it ignores margins.
+  (setq-local left-fringe-width 0)
+  (setq-local right-fringe-width 0))
 
 (add-hook 'osx-dictionary-mode-hook #'read-only-mode)
 (add-hook 'osx-dictionary-mode-hook #'visual-line-mode)
@@ -147,10 +252,20 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
   (interactive)
   (shell-command (concat "say " (shell-quote-argument (osx-dictionary--get-current-word)))))
 
+(defvar-local osx-dictionary--current-word nil
+  "The word displayed in this `osx-dictionary-mode' buffer.
+Set by `osx-dictionary--view-result'.")
+
 (defun osx-dictionary--get-current-word ()
-  (save-excursion
-    (goto-char (point-min))
-    (replace-regexp-in-string (rx "·") "" (current-word))))
+  "Return the word displayed in the current `osx-dictionary-mode' buffer.
+Falls back to scanning from the top of the buffer if
+`osx-dictionary--current-word' was never set -- do not rely on this
+fallback, since a labeled result's first line is now a dictionary-name
+heading, not the word."
+  (or osx-dictionary--current-word
+      (save-excursion
+        (goto-char (point-min))
+        (replace-regexp-in-string (rx "·") "" (current-word)))))
 
 (defun osx-dictionary-quit ()
   "Quit osx-dictionary: reselect previously selected buffer."
@@ -180,8 +295,25 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
         (switch-to-buffer-other-window buffer)
       (select-window window))))
 
+(defun osx-dictionary--search-dictionary-args ()
+  "Return the \"-d NAME ...\" args restricting a search, or nil for none.
+One `-d' per name in `osx-dictionary-current-dictionary' when set; otherwise
+one per name in `osx-dictionary-allowed-dictionaries', when that is set;
+nil when neither applies, so the CLI falls back to Dictionary.app's own
+\"all active dictionaries\" search."
+  (let ((names (cond (osx-dictionary-current-dictionary
+                      (list osx-dictionary-current-dictionary))
+                     (osx-dictionary-allowed-dictionaries
+                      (mapcar #'osx-dictionary--entry-real-name
+                              (osx-dictionary--selectable-dictionaries))))))
+    (when names
+      (mapconcat (lambda (name) (concat "-d " (shell-quote-argument name)))
+                 names " "))))
+
 (defun osx-dictionary--search (word)
-  "Search WORD."
+  "Search WORD, restricted per `osx-dictionary--search-dictionary-args'.
+When more than one dictionary is queried, each one's block is preceded by
+a line of the form \\x01NAME\\x01 -- see `osx-dictionary--insert-search-result'."
   ;; Save to history file
   (when osx-dictionary-search-log-file
     (append-to-file
@@ -189,9 +321,50 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
      (expand-file-name osx-dictionary-search-log-file)))
   ;; Search
   (shell-command-to-string
-   (format "%s %s 2>/dev/null"
+   (format "%s %s%s 2>/dev/null"
            (shell-quote-argument (osx-dictionary-cli-find-or-recompile))
+           (let ((args (osx-dictionary--search-dictionary-args)))
+             (if args (concat args " ") ""))
            (shell-quote-argument word))))
+
+(defconst osx-dictionary--bullet-indent "  "
+  "Hanging indent given to bullet-marked sub-senses (▸/• lines).
+Applied via the `line-prefix'/`wrap-prefix' text properties -- see
+`osx-dictionary--indent-bullets' -- rather than literal characters, so a
+bullet line that wraps across multiple screen lines keeps the indent on
+every continuation, not just the first.")
+
+(defun osx-dictionary--indent-bullets (start end)
+  "Give each bullet-marked line (▸/•) between START and END a hanging indent.
+`osx-dictionary.m' forces such a line onto its own line but no longer pads
+it with literal spaces, leaving the actual indent to Emacs."
+  (save-excursion
+    (goto-char start)
+    (while (re-search-forward "^[▸•] " end t)
+      (let ((bol (line-beginning-position))
+            (eol (line-end-position)))
+        (put-text-property bol eol 'line-prefix osx-dictionary--bullet-indent)
+        (put-text-property bol eol 'wrap-prefix osx-dictionary--bullet-indent)))))
+
+(defun osx-dictionary--insert-search-result (word)
+  "Insert the search result for WORD at point.
+Turns each \\x01NAME\\x01 marker line `osx-dictionary--search' may have
+embedded (one per dictionary that was queried) into a heading naming that
+dictionary -- via `osx-dictionary--display-name-for', so an alias set in
+`osx-dictionary-allowed-dictionaries' is shown there too -- styled with
+`osx-dictionary-dictionary-name'; and gives each bullet-marked line a
+hanging indent, see `osx-dictionary--indent-bullets'."
+  (let ((start (point)))
+    (insert (osx-dictionary--search word))
+    (save-excursion
+      (goto-char start)
+      (while (re-search-forward "\x01\\([^\x01\n]*\\)\x01\n" nil t)
+        (replace-match
+         (concat (propertize (osx-dictionary--display-name-for (match-string 1))
+                              'font-lock-face 'osx-dictionary-dictionary-name)
+                 "\n")
+         nil t)))
+    (osx-dictionary--indent-bullets start (point))))
 
 (defun osx-dictionary-recompile ()
   "Create or replace the `osx-dictionary-cli' executable using the latest code."
@@ -218,9 +391,13 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
           (let ((progress-reporter
                  (make-progress-reporter (format "Searching (%s)..." word)
                                          nil nil)))
-            (insert (osx-dictionary--search word))
+            (osx-dictionary--insert-search-result word)
             (progress-reporter-done progress-reporter))
           (osx-dictionary--goto-dictionary word)
+          ;; After `osx-dictionary--goto-dictionary', so `osx-dictionary-mode'
+          ;; (which kills buffer-local variables) is already on; setting this
+          ;; any earlier would be wiped out by it turning on for a fresh buffer.
+          (setq osx-dictionary--current-word word)
           (goto-char (point-min))
           (let ((buffer-read-only nil))
             (whitespace-cleanup))))
@@ -248,11 +425,63 @@ Turning on Text mode runs the normal hook `osx-dictionary-mode-hook'."
 
 ;;;###autoload
 (defun osx-dictionary-get-all-dictionaries ()
-  "Get all dictionaries as a list."
+  "Get the names of all dictionaries installed in Dictionary.app, as a list."
   (split-string
    (shell-command-to-string
     (format "%s -l" (shell-quote-argument (osx-dictionary-cli-find-or-recompile))))
-   "\n"))
+   "\n" t))
+
+(defun osx-dictionary--selectable-dictionaries ()
+  "Entries `osx-dictionary-select-dictionary' offers, in display order.
+Honors `osx-dictionary-allowed-dictionaries' (plain name strings, or (REAL
+. DISPLAY) conses -- see its docstring), dropping any entry whose real
+name is no longer installed.  Each element of the result is in that same
+form; use `osx-dictionary--entry-real-name' / `-display-name' to project."
+  (let ((installed (osx-dictionary-get-all-dictionaries)))
+    (if osx-dictionary-allowed-dictionaries
+        (seq-filter (lambda (entry)
+                      (member (osx-dictionary--entry-real-name entry) installed))
+                    osx-dictionary-allowed-dictionaries)
+      installed)))
+
+;;;###autoload
+(defun osx-dictionary-select-dictionary (&optional dictionary)
+  "Restrict `osx-dictionary' lookups to DICTIONARY.
+Interactively, prompts among the dictionaries installed in Dictionary.app
+(narrowed and ordered by `osx-dictionary-allowed-dictionaries' when set),
+plus a final \"All ...\" choice to search every one of them (the default,
+with no restriction, being every dictionary enabled in Dictionary.app).
+Always prompts in that same fixed order: the current selection is not
+preselected, so re-picking it takes an explicit choice like any other --
+there is little point defaulting to what is already in effect, and doing
+so would only make the familiar order unpredictable.  The choice is
+persisted to `osx-dictionary-last-dictionary-file' and used by later
+lookups, including in future sessions.  Called from within
+`osx-dictionary-mode' (e.g. its \"S\" key), also re-searches the word
+already displayed, so switching dictionary shows that word's entry there
+instead."
+  (interactive
+   (let* ((all (if osx-dictionary-allowed-dictionaries
+                   "All allowed dictionaries"
+                 "All active dictionaries"))
+          ;; completing-read only ever returns the DISPLAY string typed/picked;
+          ;; this maps it back to the real name actually searched.
+          (display-to-real
+           (mapcar (lambda (entry)
+                     (cons (osx-dictionary--entry-display-name entry)
+                           (osx-dictionary--entry-real-name entry)))
+                   (osx-dictionary--selectable-dictionaries)))
+          (choice (completing-read
+                   "Dictionary: "
+                   (append (mapcar #'car display-to-real) (list all))
+                   nil t)))
+     (list (unless (string= choice all) (cdr (assoc choice display-to-real))))))
+  (setq osx-dictionary-current-dictionary dictionary)
+  (osx-dictionary--save-last-dictionary)
+  (message "osx-dictionary: now searching %s"
+           (osx-dictionary--current-dictionary-description))
+  (when (derived-mode-p 'osx-dictionary-mode)
+    (osx-dictionary--view-result (osx-dictionary--get-current-word))))
 
 (defun osx-dictionary--region-or-word ()
   "Return region or word around point.
