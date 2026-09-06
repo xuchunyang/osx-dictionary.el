@@ -146,6 +146,11 @@ The function takes the WORD as the sole argument."
 
 (defvar osx-dictionary-mode-header-line
   '(
+    ;; `header-line-format' ignores window margins (unlike ordinary buffer
+    ;; text), so pad it to match by hand -- read live via `:eval' rather
+    ;; than a hardcoded width, so it stays correct if `left-margin-width'
+    ;; is ever changed (e.g. by git-gutter's own setup).
+    (:eval (make-string (or left-margin-width 0) ?\s))
     (:propertize "s" face mode-line-buffer-id)
     ": Search Word"
     "    "
